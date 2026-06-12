@@ -7,24 +7,11 @@
 #'                  data = NULL,
 #'                  newData = NULL,
 #'                  settings = NULL
-#'                  trng = NULL,
 #'                  randNumber = NULL,
 #'                  implementation = c("cpp", "R")
 #'                  )
 #'
 #'
-#' get_randNumbers(n,
-#'                 n.trials = 1
-#'                 trng = NULL,
-#'                 jump_trng = 0,
-#'                 permutedblock = NULL
-#'
-#'                 list(blockSize = c(2,4,6,8),
-#'                      prop_flexible = 0.5
-#'                      coinStrength = 0.7 # can we do away with this? probably see Surv()
-#'                 )
-#'
-#'                 )
 #'
 #'
 #'
@@ -120,26 +107,13 @@
 #'     \item biasDirection - The direction of the assignment bias (0 or 1)
 #'     \item details - A list containing further information about the randomisation decision. The specific contents of this list depend on the method. See Details above.
 #'}
-allocate <- function(method,
-                     data,
-                     arm,
-                     newRecord,
-
-
-
-
-                       method='CSMSB',
-                       voteMethod=NULL,
-                       biasMethod="static",
-                       weights = NULL,
-                       alpha,
-                       biasParameters,
-                       groupImbalanceThreshold=Inf,
-                       imbalancePriority="abstain",
-                       trng = NULL,
-                       jump_trng = 0
+allocate <- function(  method = c("simple","csmsb","msb"),
+                       arm,
+                       data = NULL,
+                       newData = NULL,
+                       settings = NULL
+                       randNumber = NULL,
+                       implementation = c("cpp", "R")
 ){
-
-
 
 }
