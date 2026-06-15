@@ -743,7 +743,7 @@ Intervention interventionDecision(
  * * * * * * * * * * * * * * * * * * * */
 
 // [[Rcpp::export]]
-List get_decision(int nObs,
+List csmsb_get_decision(int nObs,
                   IntegerVector dataType_in,
                   IntegerVector nClasses_in,
                   NumericMatrix data,
@@ -1024,7 +1024,7 @@ List get_decision(int nObs,
 
 
 // [[Rcpp::export]]
-List simulate_csmsb(IntegerVector dataType_in,
+List csmsb_simulate(IntegerVector dataType_in,
                     IntegerVector nClasses_in,
                     NumericMatrix data,
                     NumericVector roll_in,

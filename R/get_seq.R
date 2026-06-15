@@ -94,6 +94,9 @@ get_randNumbers <- function(n,
 
   if(n.trials==1)  out <- out[[1]]
 
+  out <- list(sequence = out,
+              trng = trng)
+
   out
 }
 
@@ -317,10 +320,12 @@ get_permutedBlock <- function(n,
 
   if(n.trials == 1){
     out <- out[[1]]
-  } else {
-    out
   }
+
+  out <- list(sequence = out,
+              trng = trng)
 
   out
 
 }
+
