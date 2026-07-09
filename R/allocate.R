@@ -56,7 +56,14 @@ allocate <- function(  method = c("simple","csmsb","msb"),
       )
 
     } else if (implementation == "R"){
-      stop("Under construction")
+
+      result <- csmsb_allocate_R(data = data,
+                                   arm = arm,
+                                   newData = newData,
+                                   settings = settings,
+                                   randSequence = randSequence
+      )
+
     }
 
   } else {

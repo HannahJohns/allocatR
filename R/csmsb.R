@@ -122,7 +122,6 @@ csmsb_allocate_cpp <- function(data,
                                arm,
                                newData,
                                settings,
-                               replay,
                                randSequence
                        ){
 
@@ -164,6 +163,15 @@ csmsb_allocate_cpp <- function(data,
     if(biasMethod!="static") stop("groupImbalanceThreshold only supported for CS-MSB (static coin)")
   }
 
+
+
+
+  ## End preamble ##########################
+
+  # Below code is specific to cpp implementation
+
+
+
   # Convert options to magic numbers to pass to C++
   voteMethod <- unname(c(majority=0,weighted=1,pooled=2)[voteMethod])
   if(is.na(voteMethod)) stop("voteMethod not recognised")
@@ -186,6 +194,8 @@ csmsb_allocate_cpp <- function(data,
       stop("Only one allocation sequence should be provided, not a list of them.")
     }
   }
+
+
 
   # C++ randomises the last row of its input
   nObs <- nrow(data)
@@ -280,6 +290,8 @@ csmsb_allocate_cpp <- function(data,
     probability_covariate=x$probability_covariate,
     probability_group=x$probability_group
   )
+
+  ## Random Assignment ##################################################
 
   # Get the random number for this allocation
 
@@ -518,11 +530,390 @@ csmsb_trialSim_cpp <- function(data,
 
 ## R Implementations ########################################################
 
-csmsb_allocate_R <- function(){
+csmsb_allocate_R <- function(data,
+                             arm,
+                             newData,
+                             settings,
+                             randSequence){
+
+  # Extract out and process inputs
+  rand_number <- nrow(data)+1
+
+  alpha <- settings$alpha
+  biasParameters <- settings$biasParameters
+  biasMethod <- settings$biasMethod
+  voteMethod <- settings$voteMethod
+  groupImbalanceThreshold <- settings$groupImbalanceThreshold
+  imbalancePriority <- settings$imbalancePriority
+  weights <- settings$weights
+
+
+  if(is.null(alpha)) stop("alpha not provided in settings")
+
+  if(is.null(biasParameters)){
+    stop("biasParameters not provided in settings (should be optional if permuted block is used, and warned that it does nothing if supplied in this case)")
+  }
+
+  if(is.null(biasMethod)) biasMethod <- "static"
+  if(is.null(voteMethod)) voteMethod <- "pooled"
+  if(is.null(groupImbalanceThreshold))   groupImbalanceThreshold <- Inf
+  if(is.null(imbalancePriority)) imbalancePriority <-  "abstain"
+
+  if(voteMethod == "pooled"){
+    if(is.null(weights)){
+      weights <- rep(1,ncol(data))
+    }
+  }
+
+  if(!is.null(weights)){
+    if(voteMethod != "pooled") stop("weights are only supported if voteMethod is pooled")
+    if(length(weights) != ncol(data)) stop("length of weights should match columns in data")
+  }
+
+  if(is.finite(groupImbalanceThreshold)){
+    if(biasMethod!="static") stop("groupImbalanceThreshold only supported for CS-MSB (static coin)")
+  }
+
+  ## End preamble #######################################################
+
+  # Initialise outputs
+
+  decision <- NA
+  biasDirection <- NA
+
+  votes <- rep(NA,ncol(newData))
+  pVals <- rep(NA,ncol(newData))
+  effect <- rep(NA,ncol(newData))
+  effectSe <- rep(NA,ncol(newData))
+  effectLower <- rep(NA,ncol(newData))
+  effectUpper <- rep(NA,ncol(newData))
+  prospective_effect0 <- rep(NA,ncol(newData))
+  prospective_effect1 <- rep(NA,ncol(newData))
+
+  pooled_L <- NA
+  se_L <- NA
+  pool_p <- NA
+
+  for( j in 1:length(votes)){
+
+    if(("factor" %in% class(newData[,j])) & !("ordered" %in% class(newData[,j])))
+    {
+      # If numeric, run genodds on binary "does covariate match new variable"
+      if(alpha < 0)
+      {
+        # If we've fed in a nonsensical alpha, suppress any warnings as a result of this
+        fit <- tryCatch(suppressWarnings({
+          genodds::genodds(data[,j]==newData[,j],arm,alpha = alpha)
+        }),
+        error=function(e){list(pooled_p=NA)})
+      }
+      else
+      {
+        fit <- tryCatch(genodds::genodds(data[,j]==newData[,j],arm,alpha = alpha),error=function(e){list(pooled_p=NA)})
+      }
+
+      pVals[j] <- fit$pooled_p
+
+      if(!is.na(fit$pooled_p))
+      {
+
+        prospective_fit1 <- genodds::genodds(c(unlist(data[,j]==newData[,j]),unlist(newData[,j]==newData[,j])),c(arm,1))
+        prospective_fit0 <- genodds::genodds(c(unlist(data[,j]==newData[,j]),unlist(newData[,j]==newData[,j])),c(arm,0))
+
+        prospective_effect1[j] <- prospective_fit1$pooled_lnodds
+        prospective_effect0[j] <- prospective_fit0$pooled_lnodds
+
+        if(abs(prospective_fit1$pooled_lnodds) < abs(prospective_fit0$pooled_lnodds))
+        {
+          # Assigning to 1 pushes us closer to null
+          votes[j] <- 1
+        }
+        else if (abs(prospective_fit1$pooled_lnodds) > abs(prospective_fit0$pooled_lnodds))
+        {
+          # Assigning to 1 pushes us away from null
+          votes[j] <- 0
+        }
+        else
+        {
+          votes[j] <- NA
+        }
+
+        if(!is.na(votes[j]))
+        {
+          effect[j] <- (-1)^(votes[j]+1) * abs(fit$pooled_lnodds)
+          effectSe[j] <- fit$pooled_SElnodds
+          effectLower[j] <- fit$pooled_lnconf.int[1]
+          effectUpper[j] <- fit$pooled_lnconf.int[2]
+        }
+
+      }
+    }
+    else
+    {
+      if(alpha < 0)
+      {
+        # If we've fed in a nonsensical alpha, suppress any warnings as a result of this
+        fit <- tryCatch(suppressWarnings({
+          genodds::genodds(unlist(data[,j]),arm,alpha = alpha)
+        }),
+        error=function(e){list(pooled_p=NA)})
+      }
+      else
+      {
+        fit <- tryCatch(genodds::genodds(unlist(data[,j]),arm,alpha = alpha),error=function(e){list(pooled_p=NA)})
+      }
+
+      pVals[j] <- fit$pooled_p
+
+      if(!is.na(fit$pooled_p))
+      {
+
+        #Prospectively look at the imbalance based on this decision
+        # If we assign the new record to 1 does it make the odds ratio larger or smaller?
+
+        prospective_fit1 <- genodds::genodds(c(unlist(data[,j]),unlist(newData[,j])),c(arm,1))
+        prospective_fit0 <- genodds::genodds(c(unlist(data[,j]),unlist(newData[,j])),c(arm,0))
+
+        prospective_effect1[j] <- prospective_fit1$pooled_lnodds
+        prospective_effect0[j] <- prospective_fit0$pooled_lnodds
+
+        if(abs(prospective_fit1$pooled_lnodds) < abs(prospective_fit0$pooled_lnodds))
+        {
+          # Assigning to 1 pushes us closer to null
+          votes[j] <- 1
+        }
+        else if (abs(prospective_fit1$pooled_lnodds) > abs(prospective_fit0$pooled_lnodds))
+        {
+          # Assigning to 1 pushes us away from null
+          votes[j] <- 0
+        }
+        else
+        {
+          votes[j] <- NA
+        }
+
+        if(!is.na(votes[j]))
+        {
+          effect[j] <- ifelse(is.na(votes[j]),0,(-1)^(votes[j]+1) * abs(fit$pooled_lnodds))
+          effectSe[j] <- fit$pooled_SElnodds
+          effectLower[j] <- fit$pooled_lnconf.int[1]
+          effectUpper[j] <- fit$pooled_lnconf.int[2]
+        }
+        else
+        {
+          effect[j] <- 0
+          effectSe[j] <- fit$pooled_SElnodds
+          effectLower[j] <- fit$pooled_lnconf.int[1]
+          effectUpper[j] <- fit$pooled_lnconf.int[2]
+        }
+      }
+    }
+  }
+
+  # Step 2: combine covariates and determine coin bias
+  if(voteMethod %in% c("majority","weighted")){
+    # Count significant votes and get probability
+    if(voteMethod=="majority")
+    {
+      # Simple voting
+      sum0 <- sum(votes==0 & pVals<=alpha ,na.rm=T)
+      sum1 <- sum(votes==1 & pVals<=alpha ,na.rm=T)
+    }
+    else if(voteMethod=="weighted")
+    {
+      #Weighted voting
+      sum0 <- sum(abs(effect)[which(votes==0 & pVals<=alpha )],na.rm=T)
+      sum1 <- sum(abs(effect)[which(votes==1 & pVals<=alpha )],na.rm=T)
+    }
+
+    if(sum0>sum1){
+      prob <- biasParameters[1]
+      biasDirection <- 0
+    } else if(sum1 > sum0){
+      prob <- 1-biasParameters[1]
+      biasDirection <- 1
+    } else {
+      prob <- 0.5
+      biasDirection <- NA
+    }
+
+  } else if (voteMethod=="pooled"){
+
+    # Pooled voting using inverse variance weighting
+    # ln(odds) < 0 indicates a vote for 0, ln(odds)>0 indicates a vote for 1
+
+    if(is.null(weights))
+    {
+      weights <- rep(1,length(effect))
+    }
+
+    pooled_L <- sum(weights * effect / effectSe^2 ,na.rm = FALSE)/sum(weights/effectSe^2,na.rm = FALSE)
+    se_L <- 1/sum(effectSe^-2)
+
+    pool_p <- pnorm(abs(pooled_L),mean = 0,sd=sqrt(se_L),lower.tail = FALSE)*2
+
+    if(is.na(pool_p)) pool_p <- Inf
+
+    if(pool_p <= alpha)
+    {
+      # Get probability of voting 0.
+      # scaleFactor controls how extreme the biasing is
+
+      if(biasMethod=="static")
+      {
+        if(pooled_L<0)
+        {
+          prob <- biasParameters[1]
+        }
+        else if (pooled_L>0)
+        {
+          prob <- 1-biasParameters[1]
+        }
+        else
+        {
+          prob <- 0.5
+        }
+
+      }
+      else if(biasMethod=="linear")
+      {
+        prob <- 0.5+ biasParameters[1]*abs(pooled_L)
+      }
+      else
+      {
+        stop("biasMethod not recognised")
+      }
+
+      biasDirection <- ifelse(prob>0.5,0,1)
+
+
+    }
+    else
+    {
+      prob <- 0.5
+      biasDirection <- NA
+    }
+  }
+
+
+  # Step 3: Estimate group size control and get coin strength for this outcome too
+  # Group imbalance is built with a fixed coin in mind
+
+  if(length(arm) > 0){
+    p0 <- sum(arm==0)/length(arm)
+    p1 <- sum(arm==1)/length(arm)
+  } else {
+    p0 <- 0
+    p1 <- 0
+  }
+
+  groupImbalance <- abs(p0-p1)
+  groupImbalanceProb <- 0.5
+
+  if(groupImbalance > groupImbalanceThreshold){
+    if(p0>p1) groupImbalanceProb <- 1-biasParameters[1]
+    if(p0<p1) groupImbalanceProb <- biasParameters[1]
+  }
+
+  covBalanceProb <- prob
+
+  if(covBalanceProb!=groupImbalanceProb){
+
+    if(covBalanceProb==0.5){ # covImbalance doesn't care
+
+      prob <- groupImbalanceProb
+
+    } else {
+      if(groupImbalanceProb==0.5){ # groupImbalance doesn't care
+        prob <- covBalanceProb
+      } else {
+        # Both covariate balance and group imbalance care
+        if(imbalancePriority == "abstain"){
+          prob <- 0.5
+        } else if(imbalancePriority == "covariate"){
+          prob <- covBalanceProb
+        } else if(imbalancePriority == "group"){
+          prob <- groupImbalanceProb
+        }
+
+      }
+    }
+  }
+
+  details <- list(
+    pVals = pVals,
+    vote = votes,
+    imbalance = effect,
+    seImbalance = effectSe,
+    prospectiveImbalance0=prospective_effect0,
+    prospectiveImbalance1=prospective_effect1,
+    BD = pooled_L,
+    seBD = se_L,
+    BD_pVal = pool_p,
+    covBalanceProb=covBalanceProb,
+    groupImbalanceProb=groupImbalanceProb
+  )
+
+
+  ## Random Assignment ##################################################
+
+  # Get the random number for this allocation
+
+  if("Runif" %in% class(randSequence$sequence)){
+
+    randSequence <- randSequence$sequence
+    roll <- randSequence[rand_number]
+
+  } else if ("Permutedblock" %in% class(randSequence$sequence)){
+
+    randSequence <- randSequence$sequence
+    roll <- randSequence[rand_number,]
+
+    if(roll[1] == 0){
+
+      if(roll[2] == 0 ){
+
+        roll <- (0+(1-biasParameters)) / 2
+
+      } else if (roll[2]==1){
+
+        roll <- ((1-biasParameters) + 0.5) / 2
+
+      } else stop("Something is wrong with randSequence")
+
+    } else if (roll[1] == 1) {
+
+      if(roll[2] == 0 ){
+
+        roll <- ((biasParameters) + 1) / 2
+
+      } else if (roll[2]==1){
+
+        roll <- (0.5 + (biasParameters)) / 2
+
+      } else stop("Something is wrong with randSequence")
+
+    } else {
+      stop("Something is wrong with randSequence")
+    }
+  }
+
+  decision <- ifelse(roll<prob,0,1)
+
+  return(
+    list(
+    decision = decision,
+    prob = prob,
+    roll = roll,
+    biasDirection = biasDirection,
+    details = details
+  ))
 
 }
 
+
 csmsb_trialSim_R <- function(){
+
 
 }
 

@@ -3,7 +3,6 @@ trialSim <- function(  method = c("simple","csmsb","msb"),
                        replay = FALSE,
                        settings = NULL,
                        randSequence = NULL,
-                       implementation = NULL,
                        simple=NULL,
                        nThreads = NULL
 ){
@@ -87,7 +86,6 @@ trialSim <- function(  method = c("simple","csmsb","msb"),
                           replay = replay,
                           settings = settings,
                           randSequence = this_randSeq,
-                          implementation = implementation,
                           simple=simple
       )
 
@@ -108,7 +106,6 @@ trialSim <- function(  method = c("simple","csmsb","msb"),
                                       replay=replay,
                                       settings=settings,
                                       randSequence=randSequence,
-                                      implementation=implementation,
                                       simple=simple
       )
       parallel::stopCluster(cl)
@@ -121,7 +118,6 @@ trialSim <- function(  method = c("simple","csmsb","msb"),
                          replay=replay,
                          settings=settings,
                          randSequence=randSequence,
-                         implementation=implementation,
                          simple=simple
       )
 
@@ -174,78 +170,65 @@ trialSim <- function(  method = c("simple","csmsb","msb"),
 
     }
 
-
-
     ### Method specific calls ########################
 
     if(method == "csmsb"){
 
-      if(is.null(implementation)) implementation <- "cpp"
+      result <- csmsb_trialSim_cpp(data = data,
+                                   settings = settings,
+                                   randSequence = randSequence,
+                                   replay=replay
+      )
 
-      if(implementation == "cpp"){
+      if(simple){
 
-        result <- csmsb_trialSim_cpp(data = data,
-                                     settings = settings,
-                                     randSequence = randSequence,
-                                     replay=replay
-        )
-
-        if(simple){
-
-          # Flatten the results to a single row
+        # Flatten the results to a single row
 
 
-          expectedAbsoluteBias <-  result$expected_bias
-          prop_random  <- result$prop_random
-          prop_random_covariate  <- result$prop_random_covariate
-          prop_random_group  <- result$prop_random_group
+        expectedAbsoluteBias <-  result$expected_bias
+        prop_random  <- result$prop_random
+        prop_random_covariate  <- result$prop_random_covariate
+        prop_random_group  <- result$prop_random_group
 
-          imbalance_std <- result$imbalance_std
-          names(imbalance_std) <- paste("std",names(imbalance_std),sep="_")
+        imbalance_std <- result$imbalance_std
+        names(imbalance_std) <- paste("std",names(imbalance_std),sep="_")
 
-          imbalance_genodds <- result$imbalance_genodds
-          names(imbalance_genodds) <- paste("genodds",names(imbalance_genodds),sep="_")
+        imbalance_genodds <- result$imbalance_genodds
+        names(imbalance_genodds) <- paste("genodds",names(imbalance_genodds),sep="_")
 
-          voteDist <- c(result$vote_dist)
-          names(voteDist) <- c(outer(rownames(result$vote_dist),colnames(result$vote_dist),paste,sep="_"))
-          names(voteDist) <- paste("vote",names(voteDist),sep="_")
-
-
-          for(i in 1:length(settings)){
-            if(is.null(settings[[i]])) settings[[i]] <- NA
-            if(length(settings[[i]]) > 1) settings[[i]] <- paste(settings[[i]], collapse = ", ")
-          }
+        voteDist <- c(result$vote_dist)
+        names(voteDist) <- c(outer(rownames(result$vote_dist),colnames(result$vote_dist),paste,sep="_"))
+        names(voteDist) <- paste("vote",names(voteDist),sep="_")
 
 
-          sim_results <- cbind(
-            do.call("data.frame",settings),
-            data.frame(
-              n=n,
-              expected_bias=expectedAbsoluteBias,
-              prop_random=prop_random,
-              prop_random_covariate=prop_random_covariate,
-              prop_random_group=prop_random_group,
-              n0=sum(result$arm=="control"),
-              n1=sum(result$arm=="treatment")
-            )
-
-          )
-
-          sim_results$allocation_difference = abs(sum(result$arm=="control") - sum(result$arm=="treatment"))
-
-          sim_results <- cbind(sim_results,t(imbalance_std),t(imbalance_genodds),t(voteDist))
-          sim_results <- cbind(method=method,sim_results)
-
-
-          result <- sim_results
-
+        for(i in 1:length(settings)){
+          if(is.null(settings[[i]])) settings[[i]] <- NA
+          if(length(settings[[i]]) > 1) settings[[i]] <- paste(settings[[i]], collapse = ", ")
         }
 
 
-      } else if (implementation == "R"){
-        stop("Under construction")
+        sim_results <- cbind(
+          do.call("data.frame",settings),
+          data.frame(
+            n=n,
+            expected_bias=expectedAbsoluteBias,
+            prop_random=prop_random,
+            prop_random_covariate=prop_random_covariate,
+            prop_random_group=prop_random_group,
+            n0=sum(result$arm=="control"),
+            n1=sum(result$arm=="treatment")
+          )
 
-      } else stop("unrecognised implementation")
+        )
+
+        sim_results$allocation_difference = abs(sum(result$arm=="control") - sum(result$arm=="treatment"))
+
+        sim_results <- cbind(sim_results,t(imbalance_std),t(imbalance_genodds),t(voteDist))
+        sim_results <- cbind(method=method,sim_results)
+
+        result <- sim_results
+
+      }
 
     } else {
       stop("Unrecognised method")
@@ -254,6 +237,5 @@ trialSim <- function(  method = c("simple","csmsb","msb"),
     return(result)
 
   }
-
 
 }
