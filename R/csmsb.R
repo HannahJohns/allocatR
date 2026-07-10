@@ -1,78 +1,27 @@
-## Settings utility ########################################################
-
-csmsb_settings <- function(alpha,
-                           biasParameters,
-                           voteMethod="pooled",
-                           biasMethod="static",
-                           weights = NULL,
-                           groupImbalanceThreshold=Inf,
-                           imbalancePriority = "abstain"
-){
-  list(
-    alpha=alpha,
-    biasParameters=biasParameters,
-    voteMethod = voteMethod,
-    biasMethod=biasMethod,
-    weights=weights,
-    groupImbalanceThreshold=groupImbalanceThreshold,
-    imbalancePriority=imbalancePriority
-  )
-}
-
-
-## CPP Implementations ########################################################
-
-#' Randomise a participant
+#' Common Scale Minimal Sufficient Balance
 #'
-#' @description Randomise a participant according to the MSB, CS-MSB or CSSize-MSB algorithms.
+#' @description
+#' Creates a randomisation scheme for the CSMSB or CS-Size MSB algorithms
 #'
-#' @usage decideBias(data, arm, newRecord,
-#'                   method=c('CSMSB', 'MSB'),
-#'                   voteMethod=NULL,
-#'                   biasMethod=c("static", "linear"),
-#'                   weights = NULL,
-#'                   alpha,
-#'                   biasParameters,
-#'                   groupImbalanceThreshold=Inf,
-#'                   imbalancePriority=c("abstain", "covariate", "group")
-#'                   trng = NULL,
-#'                   jump_trng = 0
-#'                   )
+#' @usage
+#' csmsb(alpha,
+#'       biasParameters,
+#'       voteMethod="pooled",
+#'       biasMethod="static",
+#'       weights = NULL,
+#'       groupImbalanceThreshold=Inf,
+#'       imbalancePriority = "abstain"
+#' )
 #'
-#' @param data A data frame of covariates for current records. 0 rows if first randomisation.
-#' @param arm  A vector of arm assignments for current records. Length 0 if first randomisation.
-#' @param newRecord A 1 by \code{ncol(data)} data frame of covariates for the new record.
-#' @param method A character string indicating the type of method to use.  Defaults to CSMSB.
-#' @param voteMethod A character string indicating how votes should be combined. Defaults to "majority" for MSB and "pooled" for CSMSB.
-#' @param biasMethod A character string indicating how a bias coin probability should be generated. Defaults to "static"
-#' @param weights A vector of length \code{ncol(data)} giving the weights for each column in order. Defaults to even weights if not supplied.
-#' @param alpha A number indicating the level of significance for when MSB/CSMSB intervenes.
-#' @param biasParameters A numeric vector providing parameters to the indicated bias method
-#' @param groupImbalanceThreshold Group allocation imbalance threshold required to trigger CSSize-MSB allocation rules. By default will never trigger.
-#' @param imbalancePriority Priority rule for CSSize-MSB. Defaults to "abstain"
-#' @param trng an optional parallel random number generator from the rTRNG package. If an integer is supplied instead, a yarn3 engine will be generated using this integer as the seed.
-#' @param jump_trng a nonnegative integer specifying how many steps the trng engine should be jumped forward before it is used.
+#' @param alpha A number indicating the level of significance for when CSMSB/CS-Size intervenes based on covariate imbalance.
+#' @param biasParameters A numeric vector providing parameters to the indicated bias method. See details.
+#' @param voteMethod A character string indicating how covariate votes should be combined.
+#' @param biasMethod A character string indicating how a bias coin probabilities should be generated.
+#' @param weights A named vector giving the weights for each covariate. Defaults to even weights if no value is supplied.
+#' @param groupImbalanceThreshold Group allocation imbalance threshold required to trigger CSSize-MSB allocation rules. By default this will never trigger (i.e. CSMSB is used, not CSSize-MSB).
+#' @param imbalancePriority Priority rule for CSSize-MSB. Defaults to "abstain".
 #'
 #' @details
-#'
-#' Variable type is read from the class of each column in \code{data}.
-#' Factors are assumed categorical, ordered factors are assumed ordinal
-#' and numeric are assumed continuous.
-#'
-#' When \code{method=="MSB"}, the Minimal Sufficient Balance algorithm is used.
-#' As implemented here, it uses the Chi-square test to evaluate imbalance on
-#' categorical variables, and the two group z-test (assuming equal variance) to
-#' evaluate imbalance on continuous variables. This is done even when the
-#' chi-square test may be inaccurate due to low cell counts or where the sample variance is large.
-#' Ordinal variables are not supported by this algorithm.
-#'
-#' If the MSB algorithm is used, \code{voteMethod} must be \code{"majority"} and
-#' \code{biasMethod} must be \code{"static"}
-#'
-#' When \code{method=="CSMSB"}, the Common Scale Minimal Sufficient Balance
-#' algorithm is used. It always uses the Wilcoxon-Mann-Whitney odds ratio to
-#' evaluate imbalance. For categorical variables, it uses a binary representation
-#' of the variable, which is 1 if it matches the value in \code{newRecord} or 0 otherwise.
 #'
 #' \code{biasParameters} should be either a single number or a vector of numbers
 #' depending on \code{biasMethod}
@@ -82,42 +31,63 @@ csmsb_settings <- function(alpha,
 #' \item linear - a single number between 1 and infinity that scales the imbalance measure to calculate a biased coin strength according to the formula 0.5+imbalance*biasParameters
 #' }
 #'
-#' When using majority or weighted voting, there are a few quirks to this implementation.
+#' When csmsb() is used with the \link[=trialSim]{\code{trialSim()}} function and with majority or weighted
+#' voting, there are a few quirks to its implementation.
 #' \enumerate{
 #'     \item When checking each variable, we assume that a vote is always valid and log the vote as if it is.
 #'     \item We remove invalid votes based on \code{alpha}, immediately before we tally votes.
 #' }
 #' This is mainly done so we can log small imbalances for understanding trial behaviour over time.
 #'
-#' The \code{details} list returned by this function varies in contents depending on the method used.
+#' When csmsb() is used with the \link[=allocate]{\code{allocate()}} function, the details list in its output
+#' will contain the following:
+#'   \itemize{
+#'            \item pVals - p-values indicating imbalance for each covariate
+#'            \item vote - The votes placed by each covariate
+#'            \item imbalance - The current imbalance on each covariate
+#'            \item seImbalance - The standard error of the imbalance on each covariate
+#'            \item prospectiveImbalance0 - The imalance on each covariate if the new participant is assigned to control,
+#'            \item prospectiveImbalance1 - The imalance on each covariate if the new participant is assigned to intervention,
+#'            \item BD - The pooled measure of imbalance,
+#'            \item seBD - The standard error of the pooled measure of imbalance,
+#'            \item BD_pVal - The p-value of the pooled measure of imbalance,
+#'            \item covBalanceProb=covBalanceProb - the probability of assignent to control if only covariate balance is considered,
+#'            \item groupImbalanceProb=groupImbalanceProb  - the probability of assignent to control if only group allocation balance is considered
+#'     }
 #'
-#' If \code{method=="MSB"} then it will contain the following:
+#' @returns an object of class RandomisationScheme
 #'
-#' \itemize{
-#'  \item testStatistic - the test statistics used for each
-#'  \item vote - the votes placed by each variable
-#' }
+#' @references
+#' Johns, Hannah, et al. "Common scale minimal sufficient balance: An improved method for covariate‐adaptive randomization based on the Wilcoxon‐Mann‐Whitney odds ratio statistic." Statistics in Medicine 41.10 (2022): 1846-1861.
 #'
-#' If \code{method=="CSMSB"} then it will contain the following:
-#'
-#' \itemize{
-#'  \item testStatistic - The test statistic(s) used by the CSMSB algorithm
-#'  \item vote - The votes placed by each variable
-#'  \item imbalance - The current imbalance on each variable
-#'  \item seImbalance - The standard error of the current imbalance on each variable
-#'  \item prospectiveImbalance0 - The imalance on each variable if the new participant is assigned to control
-#'  \item prospectiveImbalance1 - The imalance on each variable if the new participant is assigned to intervention
-#'  \item BD - The pooled measure of imbalance
-#'  \item seBD - The standard error of the pooled measure of imbalance
-#'  }
-#'
-#' @return  A list containing the following:
-#' \itemize{
-#'     \item decision - A randomisation decision (0 or 1)
-#'     \item prob - The probability of assignment to arm 0
-#'     \item biasDirection - The direction of the assignment bias (0 or 1)
-#'     \item details - A list containing further information about the randomisation decision. The specific contents of this list depend on the method. See Details above.
-#'}
+#' Italiano, Dominic, et al. "Adaptive Randomization Method to Prevent Extreme Instances of Group Size and Covariate Imbalance in Stroke Trials." Stroke 55.8 (2024): 1962-1972.
+csmsb <- function(alpha,
+                  biasParameters,
+                  voteMethod="pooled",
+                  biasMethod="static",
+                  weights = NULL,
+                  groupImbalanceThreshold=Inf,
+                  imbalancePriority = "abstain"
+){
+  out <- list(
+    method = "csmsb",
+    settings = list(
+      alpha=alpha,
+      biasParameters=biasParameters,
+      voteMethod = voteMethod,
+      biasMethod=biasMethod,
+      weights=weights,
+      groupImbalanceThreshold=groupImbalanceThreshold,
+      imbalancePriority=imbalancePriority
+    )
+  )
+
+  class(out) <- c("RandomisationScheme",class(out))
+  out
+}
+
+
+## CPP Implementations ########################################################
 csmsb_allocate_cpp <- function(data,
                                arm,
                                newData,
@@ -148,16 +118,52 @@ csmsb_allocate_cpp <- function(data,
   if(is.null(groupImbalanceThreshold))   groupImbalanceThreshold <- Inf
   if(is.null(imbalancePriority)) imbalancePriority <-  "abstain"
 
-  if(voteMethod == "pooled"){
+  if(!is.null(weights)){
+
+    if(is.null(names(weights))){
+      if(length(weights) == ncol(data)){
+
+        names(weights) <- colnames(data)
+        if(length(unique(weights)) != 1) warning("weights were not named and are assumed to correspond to columns in data in order")
+
+      } else {
+        stop("length of weights should match columns in data if weights are not named")
+      }
+
+    } else {
+
+
+
+      if(!is.null(setdiff(colnames(data),names(weights)))){
+        stop(
+          sprintf("No weight found for data columns %s",
+                  paste(setdiff(colnames(data),names(weights)), collapse = ",")
+          )
+        )
+      }
+
+      if(!is.null(setdiff(names(weights),colnames(data)))){
+        warning(
+          sprintf("Discarding weights %s",
+                  paste(setdiff(names(weights),colnames(data)), collapse = ",")
+          )
+        )
+      }
+
+      weights <- weights[colnames(data)]
+
+    }
+
+    if(voteMethod != "pooled") stop("weights are only supported if voteMethod is pooled")
+  } else {
+
     if(is.null(weights)){
       weights <- rep(1,ncol(data))
+      names(weights) <- colnames(data)
     }
+
   }
 
-  if(!is.null(weights)){
-    if(voteMethod != "pooled") stop("weights are only supported if voteMethod is pooled")
-    if(length(weights) != ncol(data)) stop("length of weights should match columns in data")
-  }
 
   if(is.finite(groupImbalanceThreshold)){
     if(biasMethod!="static") stop("groupImbalanceThreshold only supported for CS-MSB (static coin)")
@@ -372,15 +378,51 @@ csmsb_trialSim_cpp <- function(data,
   if(is.null(groupImbalanceThreshold))   groupImbalanceThreshold <- Inf
   if(is.null(imbalancePriority)) imbalancePriority <-  "abstain"
 
-  if(voteMethod == "pooled"){
-    if(is.null(weights)){
-      weights <- rep(1,ncol(data))
-    }
-  }
 
   if(!is.null(weights)){
+
+    if(is.null(names(weights))){
+      if(length(weights) == ncol(data)){
+
+        names(weights) <- colnames(data)
+        if(length(unique(weights)) != 1) warning("weights were not named and are assumed to correspond to columns in data in order")
+
+      } else {
+        stop("length of weights should match columns in data if weights are not named")
+      }
+
+    } else {
+
+
+
+      if(!is.null(setdiff(colnames(data),names(weights)))){
+        stop(
+          sprintf("No weight found for data columns %s",
+                  paste(setdiff(colnames(data),names(weights)), collapse = ",")
+          )
+        )
+      }
+
+      if(!is.null(setdiff(names(weights),colnames(data)))){
+        warning(
+          sprintf("Discarding weights %s",
+                  paste(setdiff(names(weights),colnames(data)), collapse = ",")
+          )
+        )
+      }
+
+      weights <- weights[colnames(data)]
+
+    }
+
     if(voteMethod != "pooled") stop("weights are only supported if voteMethod is pooled")
-    if(length(weights) != ncol(data)) stop("length of weights should match columns in data")
+  } else {
+
+    if(is.null(weights)){
+      weights <- rep(1,ncol(data))
+      names(weights) <- colnames(data)
+    }
+
   }
 
   if(is.finite(groupImbalanceThreshold)){
@@ -528,7 +570,6 @@ csmsb_trialSim_cpp <- function(data,
 
 
 ## R Implementations ########################################################
-
 csmsb_allocate_R <- function(data,
                              arm,
                              newData,
@@ -558,15 +599,50 @@ csmsb_allocate_R <- function(data,
   if(is.null(groupImbalanceThreshold))   groupImbalanceThreshold <- Inf
   if(is.null(imbalancePriority)) imbalancePriority <-  "abstain"
 
-  if(voteMethod == "pooled"){
+  if(!is.null(weights)){
+
+    if(is.null(names(weights))){
+      if(length(weights) == ncol(data)){
+
+        names(weights) <- colnames(data)
+        if(length(unique(weights)) != 1) warning("weights were not named and are assumed to correspond to columns in data in order")
+
+      } else {
+        stop("length of weights should match columns in data if weights are not named")
+      }
+
+    } else {
+
+
+
+      if(!is.null(setdiff(colnames(data),names(weights)))){
+        stop(
+          sprintf("No weight found for data columns %s",
+                  paste(setdiff(colnames(data),names(weights)), collapse = ",")
+          )
+        )
+      }
+
+      if(!is.null(setdiff(names(weights),colnames(data)))){
+        warning(
+          sprintf("Discarding weights %s",
+                  paste(setdiff(names(weights),colnames(data)), collapse = ",")
+          )
+        )
+      }
+
+      weights <- weights[colnames(data)]
+
+    }
+
+    if(voteMethod != "pooled") stop("weights are only supported if voteMethod is pooled")
+  } else {
+
     if(is.null(weights)){
       weights <- rep(1,ncol(data))
+      names(weights) <- colnames(data)
     }
-  }
 
-  if(!is.null(weights)){
-    if(voteMethod != "pooled") stop("weights are only supported if voteMethod is pooled")
-    if(length(weights) != ncol(data)) stop("length of weights should match columns in data")
   }
 
   if(is.finite(groupImbalanceThreshold)){

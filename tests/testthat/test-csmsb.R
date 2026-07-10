@@ -24,21 +24,20 @@ test_that("C++ implementation of cs-msb matches R implementation", {
     rownames(df) <- NULL
     randSequence = get_randNumbers(nrow(df), trng = s)
 
-    tmp <- allocatR::trialSim(method = "csmsb",
+    tmp <- allocatR::trialSim(method = csmsb(alpha=0.5, biasParameters=0.7),
                               data=df,replay = T,
                               randSequence = randSequence,
-                              settings = csmsb_settings(alpha=0.5, biasParameters=0.7),
                               nThreads = 1
                               )
 
     sapply(1:(nrow(df)-1),function(i){
 
-      allocatR::allocate("csmsb",
+      allocatR::allocate(csmsb(alpha=0.5, biasParameters=0.7),
                          arm = c(control=0,treatment=1)[tmp$arm[1:i]],
                          data=df[1:i,],
                          newData =df[i+1,],
                          randSequence = randSequence,
-                         settings = csmsb_settings(alpha=0.5, biasParameters=0.7),implementation = "R" )$prob
+                         implementation = "R" )$prob
 
     }) -> tmp2
 
@@ -68,24 +67,22 @@ test_that("C++ and R implementations agree on when threshold for covariates is r
   sapply(seq(0,1,0.01), function(alpha){
 
 
-    allocatR::allocate("csmsb",
+    allocatR::allocate(csmsb(alpha=alpha, biasParameters=0.7),
                        arm = arm,
                        data=df,
                        newData =df[1,],
                        randSequence = randSequence,
-                       settings = csmsb_settings(alpha=alpha, biasParameters=0.7),
                        implementation = "R")$prob
 
   }) -> R_implementation
 
   sapply(seq(0,1,0.01), function(alpha){
 
-    allocatR::allocate("csmsb",
+    allocatR::allocate(csmsb(alpha=alpha, biasParameters=0.7),
                        arm = arm,
                        data=df,
                        newData =df[1,],
                        randSequence = randSequence,
-                       settings = csmsb_settings(alpha=alpha, biasParameters=0.7),
                        implementation = "cpp")$prob
 
   }) -> cpp_implementation
@@ -107,24 +104,22 @@ test_that("C++ implementation of cs-msb matches R implementation when weights ar
     rownames(df) <- NULL
     randSequence = get_randNumbers(nrow(df), trng = s)
 
-    tmp <- allocatR::trialSim(method = "csmsb",
+    tmp <- allocatR::trialSim( csmsb(alpha=0.5,
+                                              biasParameters=0.7,
+                                              weights = c(2,1,1)
+                                              ),
                               data=df,replay = T,
                               randSequence = randSequence,
-                              settings = csmsb_settings(alpha=0.5,
-                                                        biasParameters=0.7,
-                                                        weights = c(2,1,1)
-                                                        ),
                               nThreads = 1
     )
 
     sapply(1:(nrow(df)-1),function(i){
 
-      allocatR::allocate("csmsb",
+      allocatR::allocate(csmsb(alpha=0.5, biasParameters=0.7,weights = c(2,1,1)),
                          arm = c(control=0,treatment=1)[tmp$arm[1:i]],
                          data=df[1:i,],
                          newData =df[i+1,],
                          randSequence = randSequence,
-                         settings = csmsb_settings(alpha=0.5, biasParameters=0.7,weights = c(2,1,1)),
                          implementation = "R" )$prob
 
     }) -> tmp2

@@ -1,11 +1,66 @@
-trialSim <- function(  method = c("simple","csmsb","msb"),
-                       data,
-                       replay = FALSE,
-                       settings = NULL,
-                       randSequence = NULL,
-                       simple=NULL,
-                       nThreads = NULL
+#' Simulate a trial (or multiple trials)
+#'
+#' @description Randomise a participant according to the MSB, CS-MSB or CSSize-MSB algorithms.
+#'
+#' @usage trialSim( randomisationScheme,
+#'                  data = NULL,
+#'                  replay = FALSE,
+#'                  randSequence = NULL,
+#'                  simple=NULL,
+#'                  nThreads=NULL
+#'                  )
+#' @param randomisationScheme an object of type \link{RandomisationScheme}
+#' @param data A data frame containing relevant data (e.g. covariates) for participants in simulated trials
+#' @param replay A logical value. If \code{TRUE} then trial participants are randomised in sequence from the first to last row of \code{data}.
+#'               If \code{FALSE}, then participants are randomly sampled with replacement from \code{data}
+#' @param randSequence An object of type \link{Alloc_seq}
+#' @param simple A logical value. If \code{TRUE} then results of each simulated trial are condensed to a single row.
+#' @param nThreads Number of parallel threads to use in simulation.
+#'
+#' @returns A list with class \code{Allocation} containing the following:
+#' \describe{
+#' \item assignment
+#' \item details a list containing internal steps taken to reach this assignment result
+#' }
+#'
+#' @details
+#'
+#' Size of trial and number of simulated trials are both specified by \link[=Alloc_seq]{randSequence} object.
+#'
+#' If \code{replay} is \code{TRUE} then the trial length must equal \code{nrow(data)}.
+#'
+#' If relevant, variable types are read from the class of each column in \code{data}.
+#' Factors are assumed categorical, ordered factors are assumed ordinal and numeric
+#' are assumed continuous.
+#'
+#' See details of functions that produce \link[=RandomisationScheme]{randomisationScheme} for specific details
+#' of each method.
+#'
+#' @examples
+#'
+#' data <- synthetic_covariate_data
+#'
+#' randScheme <- csmsb(alpha = 0.5, biasParameters=0.7)
+#' randSeq <- get_randNumbers(100, trng=1)
+#'
+#' trialSim(randomisationScheme=randScheme, randSequence=randSeq,  data=data, replay=FALSE)
+#'
+#' randSeq2 <- get_randNumbers(100, n.trials=10, trng=2)
+#'
+#' trialSim(randomisationScheme=randScheme, randSequence=randSeq2,  data=data, replay=FALSE)
+#'
+trialSim <- function(randomisationScheme,
+                     randSequence,
+                     data = NULL,
+                     replay = FALSE,
+                     simple=NULL,
+                     nThreads = NULL
 ){
+
+  if(!("RandomisationScheme" %in% class(randomisationScheme))) stop("randomisationScheme should be a randomisation scheme")
+
+  method <- randomisationScheme$method
+  settings <-  randomisationScheme$settings
 
   # Generic input sanitation
   data <- as.data.frame(data)
@@ -39,14 +94,32 @@ trialSim <- function(  method = c("simple","csmsb","msb"),
     # This is just a fancy wrapper for trialSim, which gets called recursively.
 
     batchSimFunction <- function(i,
-                                 method,
+                                 randomisationScheme,
                                  data,
                                  replay,
-                                 settings,
-                                 randSequence,
-                                 implementation,
+                                 randSequence_details,
                                  simple
     ){
+
+      this_sequence = randSequence$sequence[[i]]
+
+      this_trng <- switch(randSequence_details$trng_type,
+        Rcpp_yarn2=rTRNG::yarn2$new(randSequence_details$trng_string),
+        Rcpp_yarn3=rTRNG::yarn3$new(randSequence_details$trng_string),
+        Rcpp_yarn4=rTRNG::yarn4$new(randSequence_details$trng_string),
+        Rcpp_yarn5=rTRNG::yarn5$new(randSequence_details$trng_string),
+        Rcpp_yarn3s=rTRNG::yarn3s$new(randSequence_details$trng_string),
+        Rcpp_yarn5s=rTRNG::yarn5s$new(randSequence_details$trng_string),
+        Rcpp_lcg64=rTRNG::lcg64$new(randSequence_details$trng_string),
+        Rcpp_lcg64_shift=rTRNG::lcg64_shift$new(randSequence_details$trng_string),
+        Rcpp_mrg2=rTRNG::mrg2$new(randSequence_details$trng_string),
+        Rcpp_mrg3=rTRNG::mrg3$new(randSequence_details$trng_string),
+        Rcpp_mrg4=rTRNG::mrg4$new(randSequence_details$trng_string),
+        Rcpp_mrg5=rTRNG::mrg5$new(randSequence_details$trng_string),
+        Rcpp_mrg3s=rTRNG::mrg3s$new(randSequence_details$trng_string),
+        Rcpp_mrg5s=rTRNG::mrg5s$new(randSequence_details$trng_string),
+        stop("UNRECOGNISED TRNG ENGINE TYPE")
+      )
 
       # All sequences should be the same size
 
@@ -55,10 +128,10 @@ trialSim <- function(  method = c("simple","csmsb","msb"),
       # If we do, we need toto jump the seed state ahead
       # the correct ammount to avoid double-dipping
 
-      if("Runif" %in% class(randSequence$sequence[[1]])) {
-        n <- length(randSequence$sequence[[1]])
-      } else if("Permutedblock" %in% class(randSequence$sequence[[1]])) {
-        n <- nrow(randSequence$sequence[[1]])
+      if("Runif" %in% class(this_sequence)) {
+        n <- length(this_sequence)
+      } else if("Permutedblock" %in% class(this_sequence)) {
+        n <- nrow(this_sequence)
       } else {
         stop("Unrecognised sequence type")
       }
@@ -66,14 +139,11 @@ trialSim <- function(  method = c("simple","csmsb","msb"),
       if(replay){
         num_to_jump_per_run <- 0 # We're not resampling rows, so there's no extra randomness
       } else {
-        num_to_jump_per_run <- n # We need n random numbers per run
+        num_to_jump_per_run <- n # We need n randthis_sequenceom numbers per run
       }
 
       # Use a modified randSeq containing just the i-th sequence plus appropriate
       # RNG engine
-
-      this_sequence = randSequence$sequence[[i]]
-      this_trng = randSequence$trng$copy()
       this_trng$jump((i-1) * num_to_jump_per_run)
 
       this_randSeq <- list(
@@ -81,10 +151,9 @@ trialSim <- function(  method = c("simple","csmsb","msb"),
        trng = this_trng
       )
 
-      thisSim <- trialSim(method = method,
+      thisSim <- trialSim(randomisationScheme=randomisationScheme,
                           data=data,
                           replay = replay,
-                          settings = settings,
                           randSequence = this_randSeq,
                           simple=simple
       )
@@ -93,7 +162,13 @@ trialSim <- function(  method = c("simple","csmsb","msb"),
     }
 
 
-
+    # Feeding through randSequence directly causes problems. Instead, feed
+    # through enough detail to reconstruct it inside the loop
+    randSequence_details = list(
+      sequence = randSequence$sequence,
+      trng_type = class(randSequence$trng),
+      trng_string = randSequence$trng$toString()
+    )
 
     # Either wrap snow functions or create dummies
     if(nThreads>1)
@@ -101,11 +176,10 @@ trialSim <- function(  method = c("simple","csmsb","msb"),
       cl <- parallel::makeCluster(nThreads)
 
       batchRun <- parallel::parLapply(cl, 1:nSims, batchSimFunction,
-                                      method=method,
+                                      randomisationScheme=randomisationScheme,
                                       data=data,
                                       replay=replay,
-                                      settings=settings,
-                                      randSequence=randSequence,
+                                      randSequence_details=randSequence_details,
                                       simple=simple
       )
       parallel::stopCluster(cl)
@@ -113,11 +187,10 @@ trialSim <- function(  method = c("simple","csmsb","msb"),
     } else {
 
       batchRun <- lapply(1:nSims, batchSimFunction,
-                         method=method,
+                         randomisationScheme=randomisationScheme,
                          data=data,
                          replay=replay,
-                         settings=settings,
-                         randSequence=randSequence,
+                         randSequence_details=randSequence_details,
                          simple=simple
       )
 

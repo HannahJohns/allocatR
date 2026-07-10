@@ -1,3 +1,17 @@
+#' Allocation Sequence
+#' @aliases Alloc_seq
+#' @description Functions that can create allocation sequences to be used in
+#' \link[=allocate]{\code{allocate()}} or \link[=trialSim]{\code{trialSim()}}
+#' functions
+#'
+#' @details
+#'
+#' The following functions produce an object of type \code{Alloc_seq}
+#' \itemize{
+#' \item \link[=get_randNumbers]{\code{get_randNumbers()}}
+#' \item \link[=get_permutedBlock]{\code{get_permutedBlock()}}
+#' }
+#' @exportS3Method
 print.Alloc_seq <- function(x){
 
   if("Runif" %in% class(x)){
@@ -21,6 +35,8 @@ print.Alloc_seq <- function(x){
   return(invisible(x))
 }
 
+
+
 #' Generate random number sequences for treatment allocation
 #'
 #' @description Creates a random uniform number sequence to be used by allocation methods
@@ -33,7 +49,6 @@ print.Alloc_seq <- function(x){
 #' @param jump_trng How many steps to advance the TRNG engine by before creating random sequences
 #'
 #' @return An object of type \code{Alloc_seq} and \code{Runif}, or a list of these objects if \code{n.trials>1}.
-#'
 get_randNumbers <- function(n,
                 n.trials = 1,
                 trng = NULL,
@@ -246,7 +261,6 @@ get_permutedBlock <- function(n,
         }
 
         blockSizeSeq <- blockSizeSeq[order(roll),]
-
 
       } else {
 
