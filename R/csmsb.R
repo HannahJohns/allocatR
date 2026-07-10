@@ -236,7 +236,7 @@ csmsb_allocate_cpp <- function(data,
   # Set arbitrarily high if finite
   if(!is.finite(groupImbalanceThreshold)) groupImbalanceThreshold <- 10
 
-  x <- csmsb:::get_decision(nObs = nObs,
+  x <- allocatR:::csmsb_get_decision(nObs = nObs,
                             data = tmpdf,
                             dataType_in = dataType,
                             nClasses_in = nClasses,
@@ -430,7 +430,6 @@ csmsb_trialSim_cpp <- function(data,
   # Set arbitrarily high if finite
   if(!is.finite(groupImbalanceThreshold)) groupImbalanceThreshold <- 10
 
-  #TODO: Fix this
 
   # Generate random numbers for randomisation and feed this list to C++
   if("Runif" %in% class(randSequence$sequence)){
@@ -441,7 +440,7 @@ csmsb_trialSim_cpp <- function(data,
 
     randSequence <- randSequence$sequence
 
-    roll <- rep(NA,n)
+    roll <- rep(NA,nrow(randSequence))
     roll[randSequence[,1] == 0 & randSequence[,2]==0] <- (0+(1-biasParameters)) / 2
     roll[randSequence[,1] == 0 & randSequence[,2]==1] <- ((1-biasParameters) + 0.5) / 2
     roll[randSequence[,1] == 1 & randSequence[,2]==1] <- (0.5 + (biasParameters)) / 2
@@ -453,7 +452,7 @@ csmsb_trialSim_cpp <- function(data,
 
   threshold <- rep(abs(qnorm(p = alpha/2)),ncol(tmpdf))
 
-  csmsb:::simulate_csmsb(dataType_in = dataType,nClasses_in = nClasses,
+  allocatR:::csmsb_simulate(dataType_in = dataType,nClasses_in = nClasses,
                          data = tmpdf,roll = roll,
                          threshold_in = threshold,
                          parms_in = biasParameters,
@@ -748,7 +747,7 @@ csmsb_allocate_R <- function(data,
     }
 
     pooled_L <- sum(weights * effect / effectSe^2 ,na.rm = FALSE)/sum(weights/effectSe^2,na.rm = FALSE)
-    se_L <- 1/sum(effectSe^-2)
+    se_L <- sum(weights^2/effectSe^2)/(sum(weights/effectSe^2)^2)
 
     pool_p <- pnorm(abs(pooled_L),mean = 0,sd=sqrt(se_L),lower.tail = FALSE)*2
 
@@ -910,12 +909,3 @@ csmsb_allocate_R <- function(data,
   ))
 
 }
-
-
-csmsb_trialSim_R <- function(){
-
-
-}
-
-
-

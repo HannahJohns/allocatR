@@ -10,9 +10,9 @@ Rcpp::Rostream<true>&  Rcpp::Rcout = Rcpp::Rcpp_cout_get();
 Rcpp::Rostream<false>& Rcpp::Rcerr = Rcpp::Rcpp_cerr_get();
 #endif
 
-// get_decision
-List get_decision(int nObs, IntegerVector dataType_in, IntegerVector nClasses_in, NumericMatrix data, IntegerVector arm_in, NumericVector threshold_in, NumericVector parms_in, int voteMethod, int biasMethod, NumericVector weights_in, double groupImbalanceThreshold, int imbalancePriority);
-RcppExport SEXP _csmsb_get_decision(SEXP nObsSEXP, SEXP dataType_inSEXP, SEXP nClasses_inSEXP, SEXP dataSEXP, SEXP arm_inSEXP, SEXP threshold_inSEXP, SEXP parms_inSEXP, SEXP voteMethodSEXP, SEXP biasMethodSEXP, SEXP weights_inSEXP, SEXP groupImbalanceThresholdSEXP, SEXP imbalancePrioritySEXP) {
+// csmsb_get_decision
+List csmsb_get_decision(int nObs, IntegerVector dataType_in, IntegerVector nClasses_in, NumericMatrix data, IntegerVector arm_in, NumericVector threshold_in, NumericVector parms_in, int voteMethod, int biasMethod, NumericVector weights_in, double groupImbalanceThreshold, int imbalancePriority);
+RcppExport SEXP _allocatR_csmsb_get_decision(SEXP nObsSEXP, SEXP dataType_inSEXP, SEXP nClasses_inSEXP, SEXP dataSEXP, SEXP arm_inSEXP, SEXP threshold_inSEXP, SEXP parms_inSEXP, SEXP voteMethodSEXP, SEXP biasMethodSEXP, SEXP weights_inSEXP, SEXP groupImbalanceThresholdSEXP, SEXP imbalancePrioritySEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -28,13 +28,13 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< NumericVector >::type weights_in(weights_inSEXP);
     Rcpp::traits::input_parameter< double >::type groupImbalanceThreshold(groupImbalanceThresholdSEXP);
     Rcpp::traits::input_parameter< int >::type imbalancePriority(imbalancePrioritySEXP);
-    rcpp_result_gen = Rcpp::wrap(get_decision(nObs, dataType_in, nClasses_in, data, arm_in, threshold_in, parms_in, voteMethod, biasMethod, weights_in, groupImbalanceThreshold, imbalancePriority));
+    rcpp_result_gen = Rcpp::wrap(csmsb_get_decision(nObs, dataType_in, nClasses_in, data, arm_in, threshold_in, parms_in, voteMethod, biasMethod, weights_in, groupImbalanceThreshold, imbalancePriority));
     return rcpp_result_gen;
 END_RCPP
 }
-// simulate_csmsb
-List simulate_csmsb(IntegerVector dataType_in, IntegerVector nClasses_in, NumericMatrix data, NumericVector roll_in, NumericVector threshold_in, NumericVector parms_in, int voteMethod, int biasMethod, NumericVector weights_in, double groupImbalanceThreshold, int imbalancePriority);
-RcppExport SEXP _csmsb_simulate_csmsb(SEXP dataType_inSEXP, SEXP nClasses_inSEXP, SEXP dataSEXP, SEXP roll_inSEXP, SEXP threshold_inSEXP, SEXP parms_inSEXP, SEXP voteMethodSEXP, SEXP biasMethodSEXP, SEXP weights_inSEXP, SEXP groupImbalanceThresholdSEXP, SEXP imbalancePrioritySEXP) {
+// csmsb_simulate
+List csmsb_simulate(IntegerVector dataType_in, IntegerVector nClasses_in, NumericMatrix data, NumericVector roll_in, NumericVector threshold_in, NumericVector parms_in, int voteMethod, int biasMethod, NumericVector weights_in, double groupImbalanceThreshold, int imbalancePriority);
+RcppExport SEXP _allocatR_csmsb_simulate(SEXP dataType_inSEXP, SEXP nClasses_inSEXP, SEXP dataSEXP, SEXP roll_inSEXP, SEXP threshold_inSEXP, SEXP parms_inSEXP, SEXP voteMethodSEXP, SEXP biasMethodSEXP, SEXP weights_inSEXP, SEXP groupImbalanceThresholdSEXP, SEXP imbalancePrioritySEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -49,13 +49,13 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< NumericVector >::type weights_in(weights_inSEXP);
     Rcpp::traits::input_parameter< double >::type groupImbalanceThreshold(groupImbalanceThresholdSEXP);
     Rcpp::traits::input_parameter< int >::type imbalancePriority(imbalancePrioritySEXP);
-    rcpp_result_gen = Rcpp::wrap(simulate_csmsb(dataType_in, nClasses_in, data, roll_in, threshold_in, parms_in, voteMethod, biasMethod, weights_in, groupImbalanceThreshold, imbalancePriority));
+    rcpp_result_gen = Rcpp::wrap(csmsb_simulate(dataType_in, nClasses_in, data, roll_in, threshold_in, parms_in, voteMethod, biasMethod, weights_in, groupImbalanceThreshold, imbalancePriority));
     return rcpp_result_gen;
 END_RCPP
 }
 // test_genodds
 NumericVector test_genodds(NumericVector Y, IntegerVector X);
-RcppExport SEXP _csmsb_test_genodds(SEXP YSEXP, SEXP XSEXP) {
+RcppExport SEXP _allocatR_test_genodds(SEXP YSEXP, SEXP XSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -67,7 +67,7 @@ END_RCPP
 }
 // msb_get_decision
 List msb_get_decision(int nObs, IntegerVector dataType_in, IntegerVector nClasses_in, NumericMatrix data, IntegerVector arm_in, NumericVector threshold_in, double parms);
-RcppExport SEXP _csmsb_msb_get_decision(SEXP nObsSEXP, SEXP dataType_inSEXP, SEXP nClasses_inSEXP, SEXP dataSEXP, SEXP arm_inSEXP, SEXP threshold_inSEXP, SEXP parmsSEXP) {
+RcppExport SEXP _allocatR_msb_get_decision(SEXP nObsSEXP, SEXP dataType_inSEXP, SEXP nClasses_inSEXP, SEXP dataSEXP, SEXP arm_inSEXP, SEXP threshold_inSEXP, SEXP parmsSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -84,7 +84,7 @@ END_RCPP
 }
 // simulate_msb
 List simulate_msb(IntegerVector dataType_in, IntegerVector nClasses_in, NumericMatrix data, NumericVector roll_in, NumericMatrix threshold_in, double parms);
-RcppExport SEXP _csmsb_simulate_msb(SEXP dataType_inSEXP, SEXP nClasses_inSEXP, SEXP dataSEXP, SEXP roll_inSEXP, SEXP threshold_inSEXP, SEXP parmsSEXP) {
+RcppExport SEXP _allocatR_simulate_msb(SEXP dataType_inSEXP, SEXP nClasses_inSEXP, SEXP dataSEXP, SEXP roll_inSEXP, SEXP threshold_inSEXP, SEXP parmsSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -100,7 +100,7 @@ END_RCPP
 }
 // pocock_randomisation
 List pocock_randomisation(const IntegerMatrix& data, const IntegerVector& stratum, const int nStrata, const NumericVector& roll, const IntegerVector& nClasses, double biasStrength, bool balanceGroups);
-RcppExport SEXP _csmsb_pocock_randomisation(SEXP dataSEXP, SEXP stratumSEXP, SEXP nStrataSEXP, SEXP rollSEXP, SEXP nClassesSEXP, SEXP biasStrengthSEXP, SEXP balanceGroupsSEXP) {
+RcppExport SEXP _allocatR_pocock_randomisation(SEXP dataSEXP, SEXP stratumSEXP, SEXP nStrataSEXP, SEXP rollSEXP, SEXP nClassesSEXP, SEXP biasStrengthSEXP, SEXP balanceGroupsSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -117,16 +117,16 @@ END_RCPP
 }
 
 static const R_CallMethodDef CallEntries[] = {
-    {"_csmsb_get_decision", (DL_FUNC) &_csmsb_get_decision, 12},
-    {"_csmsb_simulate_csmsb", (DL_FUNC) &_csmsb_simulate_csmsb, 11},
-    {"_csmsb_test_genodds", (DL_FUNC) &_csmsb_test_genodds, 2},
-    {"_csmsb_msb_get_decision", (DL_FUNC) &_csmsb_msb_get_decision, 7},
-    {"_csmsb_simulate_msb", (DL_FUNC) &_csmsb_simulate_msb, 6},
-    {"_csmsb_pocock_randomisation", (DL_FUNC) &_csmsb_pocock_randomisation, 7},
+    {"_allocatR_csmsb_get_decision", (DL_FUNC) &_allocatR_csmsb_get_decision, 12},
+    {"_allocatR_csmsb_simulate", (DL_FUNC) &_allocatR_csmsb_simulate, 11},
+    {"_allocatR_test_genodds", (DL_FUNC) &_allocatR_test_genodds, 2},
+    {"_allocatR_msb_get_decision", (DL_FUNC) &_allocatR_msb_get_decision, 7},
+    {"_allocatR_simulate_msb", (DL_FUNC) &_allocatR_simulate_msb, 6},
+    {"_allocatR_pocock_randomisation", (DL_FUNC) &_allocatR_pocock_randomisation, 7},
     {NULL, NULL, 0}
 };
 
-RcppExport void R_init_csmsb(DllInfo *dll) {
+RcppExport void R_init_allocatR(DllInfo *dll) {
     R_registerRoutines(dll, NULL, CallEntries, NULL, NULL);
     R_useDynamicSymbols(dll, FALSE);
 }
