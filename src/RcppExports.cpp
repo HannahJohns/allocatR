@@ -65,64 +65,11 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
-// msb_get_decision
-List msb_get_decision(int nObs, IntegerVector dataType_in, IntegerVector nClasses_in, NumericMatrix data, IntegerVector arm_in, NumericVector threshold_in, double parms);
-RcppExport SEXP _allocatR_msb_get_decision(SEXP nObsSEXP, SEXP dataType_inSEXP, SEXP nClasses_inSEXP, SEXP dataSEXP, SEXP arm_inSEXP, SEXP threshold_inSEXP, SEXP parmsSEXP) {
-BEGIN_RCPP
-    Rcpp::RObject rcpp_result_gen;
-    Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< int >::type nObs(nObsSEXP);
-    Rcpp::traits::input_parameter< IntegerVector >::type dataType_in(dataType_inSEXP);
-    Rcpp::traits::input_parameter< IntegerVector >::type nClasses_in(nClasses_inSEXP);
-    Rcpp::traits::input_parameter< NumericMatrix >::type data(dataSEXP);
-    Rcpp::traits::input_parameter< IntegerVector >::type arm_in(arm_inSEXP);
-    Rcpp::traits::input_parameter< NumericVector >::type threshold_in(threshold_inSEXP);
-    Rcpp::traits::input_parameter< double >::type parms(parmsSEXP);
-    rcpp_result_gen = Rcpp::wrap(msb_get_decision(nObs, dataType_in, nClasses_in, data, arm_in, threshold_in, parms));
-    return rcpp_result_gen;
-END_RCPP
-}
-// simulate_msb
-List simulate_msb(IntegerVector dataType_in, IntegerVector nClasses_in, NumericMatrix data, NumericVector roll_in, NumericMatrix threshold_in, double parms);
-RcppExport SEXP _allocatR_simulate_msb(SEXP dataType_inSEXP, SEXP nClasses_inSEXP, SEXP dataSEXP, SEXP roll_inSEXP, SEXP threshold_inSEXP, SEXP parmsSEXP) {
-BEGIN_RCPP
-    Rcpp::RObject rcpp_result_gen;
-    Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< IntegerVector >::type dataType_in(dataType_inSEXP);
-    Rcpp::traits::input_parameter< IntegerVector >::type nClasses_in(nClasses_inSEXP);
-    Rcpp::traits::input_parameter< NumericMatrix >::type data(dataSEXP);
-    Rcpp::traits::input_parameter< NumericVector >::type roll_in(roll_inSEXP);
-    Rcpp::traits::input_parameter< NumericMatrix >::type threshold_in(threshold_inSEXP);
-    Rcpp::traits::input_parameter< double >::type parms(parmsSEXP);
-    rcpp_result_gen = Rcpp::wrap(simulate_msb(dataType_in, nClasses_in, data, roll_in, threshold_in, parms));
-    return rcpp_result_gen;
-END_RCPP
-}
-// pocock_randomisation
-List pocock_randomisation(const IntegerMatrix& data, const IntegerVector& stratum, const int nStrata, const NumericVector& roll, const IntegerVector& nClasses, double biasStrength, bool balanceGroups);
-RcppExport SEXP _allocatR_pocock_randomisation(SEXP dataSEXP, SEXP stratumSEXP, SEXP nStrataSEXP, SEXP rollSEXP, SEXP nClassesSEXP, SEXP biasStrengthSEXP, SEXP balanceGroupsSEXP) {
-BEGIN_RCPP
-    Rcpp::RObject rcpp_result_gen;
-    Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< const IntegerMatrix& >::type data(dataSEXP);
-    Rcpp::traits::input_parameter< const IntegerVector& >::type stratum(stratumSEXP);
-    Rcpp::traits::input_parameter< const int >::type nStrata(nStrataSEXP);
-    Rcpp::traits::input_parameter< const NumericVector& >::type roll(rollSEXP);
-    Rcpp::traits::input_parameter< const IntegerVector& >::type nClasses(nClassesSEXP);
-    Rcpp::traits::input_parameter< double >::type biasStrength(biasStrengthSEXP);
-    Rcpp::traits::input_parameter< bool >::type balanceGroups(balanceGroupsSEXP);
-    rcpp_result_gen = Rcpp::wrap(pocock_randomisation(data, stratum, nStrata, roll, nClasses, biasStrength, balanceGroups));
-    return rcpp_result_gen;
-END_RCPP
-}
 
 static const R_CallMethodDef CallEntries[] = {
     {"_allocatR_csmsb_get_decision", (DL_FUNC) &_allocatR_csmsb_get_decision, 12},
     {"_allocatR_csmsb_simulate", (DL_FUNC) &_allocatR_csmsb_simulate, 11},
     {"_allocatR_test_genodds", (DL_FUNC) &_allocatR_test_genodds, 2},
-    {"_allocatR_msb_get_decision", (DL_FUNC) &_allocatR_msb_get_decision, 7},
-    {"_allocatR_simulate_msb", (DL_FUNC) &_allocatR_simulate_msb, 6},
-    {"_allocatR_pocock_randomisation", (DL_FUNC) &_allocatR_pocock_randomisation, 7},
     {NULL, NULL, 0}
 };
 

@@ -13,15 +13,3 @@ test_genodds <- function(Y, X) {
     .Call(`_allocatR_test_genodds`, Y, X)
 }
 
-msb_get_decision <- function(nObs, dataType_in, nClasses_in, data, arm_in, threshold_in, parms) {
-    .Call(`_allocatR_msb_get_decision`, nObs, dataType_in, nClasses_in, data, arm_in, threshold_in, parms)
-}
-
-simulate_msb <- function(dataType_in, nClasses_in, data, roll_in, threshold_in, parms) {
-    .Call(`_allocatR_simulate_msb`, dataType_in, nClasses_in, data, roll_in, threshold_in, parms)
-}
-
-pocock_randomisation <- function(data, stratum, nStrata, roll, nClasses, biasStrength, balanceGroups) {
-    .Call(`_allocatR_pocock_randomisation`, data, stratum, nStrata, roll, nClasses, biasStrength, balanceGroups)
-}
-

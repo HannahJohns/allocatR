@@ -57,6 +57,9 @@ trialSim <- function(randomisationScheme,
                      nThreads = NULL
 ){
 
+  browser()
+  # stop("We're losing class information from randSequence for some reason?")
+
   if(!("RandomisationScheme" %in% class(randomisationScheme))) stop("randomisationScheme should be a randomisation scheme")
 
   method <- randomisationScheme$method
@@ -66,6 +69,7 @@ trialSim <- function(randomisationScheme,
   data <- as.data.frame(data)
 
   #' trialSim() runs recursively if multiple randSequences are provided
+
 
   if("list" %in% class(randSequence$sequence)){
 
@@ -101,6 +105,7 @@ trialSim <- function(randomisationScheme,
                                  simple
     ){
 
+      browser()
       this_sequence = randSequence$sequence[[i]]
 
       this_trng <- switch(randSequence_details$trng_type,
@@ -127,6 +132,7 @@ trialSim <- function(randomisationScheme,
       # mihgt randomly resample rows in each sim.
       # If we do, we need toto jump the seed state ahead
       # the correct ammount to avoid double-dipping
+
 
       if("Runif" %in% class(this_sequence)) {
         n <- length(this_sequence)
@@ -162,12 +168,14 @@ trialSim <- function(randomisationScheme,
     }
 
 
+    browser()
     # Feeding through randSequence directly causes problems. Instead, feed
     # through enough detail to reconstruct it inside the loop
     randSequence_details = list(
       sequence = randSequence$sequence,
       trng_type = class(randSequence$trng),
-      trng_string = randSequence$trng$toString()
+      trng_string = randSequence$trng$toString(),
+      class = class(randSeq2$sequence[[1]])
     )
 
     # Either wrap snow functions or create dummies
@@ -302,6 +310,53 @@ trialSim <- function(randomisationScheme,
         result <- sim_results
 
       }
+
+    } else if(method == "simple"){
+
+     result <- allocatR::simple_trialSim(data = data,
+                                         settings = settings,
+                                         randSequence = randSequence,
+                                         replay=replay
+                                         )
+
+      if(simple){
+
+       # Flatten the results to a single row
+
+        expectedAbsoluteBias <-  result$expected_bias
+        prop_random  <- result$prop_random
+        prop_random_covariate  <- result$prop_random_covariate
+        prop_random_group  <- result$prop_random_group
+
+        imbalance_std <- result$imbalance_std
+        names(imbalance_std) <- paste("std",names(imbalance_std),sep="_")
+
+        imbalance_genodds <- result$imbalance_genodds
+        names(imbalance_genodds) <- paste("genodds",names(imbalance_genodds),sep="_")
+
+
+        sim_results <- cbind(
+          data.frame(
+            n=n,
+            expected_bias=expectedAbsoluteBias,
+            prop_random=prop_random,
+            prop_random_covariate=prop_random_covariate,
+            prop_random_group=prop_random_group,
+            n0=sum(result$arm=="control"),
+            n1=sum(result$arm=="treatment")
+          )
+
+        )
+
+        sim_results$allocation_difference = abs(sum(result$arm=="control") - sum(result$arm=="treatment"))
+
+        sim_results <- cbind(sim_results,t(imbalance_std),t(imbalance_genodds))
+        sim_results <- cbind(method=method,sim_results)
+
+        result <- sim_results
+
+      }
+
 
     } else {
       stop("Unrecognised method")

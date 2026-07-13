@@ -67,7 +67,7 @@ allocate <- function(  randomisationScheme,
 
     if(implementation == "cpp"){
 
-      result <- csmsb_allocate_cpp(data = data,
+      result <- allocatR::csmsb_allocate_cpp(data = data,
                                    arm = arm,
                                    newData = newData,
                                    settings = settings,
@@ -76,7 +76,7 @@ allocate <- function(  randomisationScheme,
 
     } else if (implementation == "R"){
 
-      result <- csmsb_allocate_R(data = data,
+      result <- allocatR::csmsb_allocate_R(data = data,
                                    arm = arm,
                                    newData = newData,
                                    settings = settings,
@@ -85,8 +85,20 @@ allocate <- function(  randomisationScheme,
 
     }
 
+  } else if(method == "simple"){
+
+    if(!is.null(implementation)) warning("implementation option ignored for simple randomisation scheme")
+
+    result <- allocatR::simple_allocate(data = data,
+                               arm = arm,
+                               newData = newData,
+                               settings = settings,
+                               randSequence = randSequence
+    )
+
+
   } else {
-    stop("Under construction")
+    stop("unrecognised randomisation scheme")
   }
 
   result

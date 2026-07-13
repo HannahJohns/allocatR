@@ -194,7 +194,7 @@ csmsb_allocate_cpp <- function(data,
   if(length(setdiff(arm,0:1))>0) stop("arm must contain values of 0 and 1 only")
 
 
-  # Check that only one
+  # Check that only one sequence provided
   if("list" %in% class(randSequence$sequence)){
     if("Alloc_seq" %in% class(randSequence$sequence[[1]])){
       stop("Only one allocation sequence should be provided, not a list of them.")
@@ -509,8 +509,6 @@ csmsb_trialSim_cpp <- function(data,
   trial_result$vote[trial_result$vote==-1] <- NA
   trial_result$testStatistic[trial_result$testStatistic==-9999] <- NA
   trial_result$testStatistic[is.nan(trial_result$testStatistic)] <- NA
-
-
 
   # Format results
 
