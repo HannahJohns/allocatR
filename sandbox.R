@@ -13,11 +13,15 @@ data <- synthetic_covariate_data
 
 randScheme <- simple()
 randSeq2 <- get_permutedBlock(100, blockSize = 10,n.trials = 2, trng=1)
-trialSim(randomisationScheme=randScheme, randSequence=randSeq2,  data=data, replay=FALSE, nThreads = 1)
+allocatR::trialSim(randomisationScheme=randScheme, randSequence=randSeq2,  data=data, replay=FALSE, nThreads = 1)
 
 
 
+test <- function(randSequence){
+  randSeq2$sequence[[1]]
+}
 
+test(randSeq2)
 
 
 randSeq <- get_randNumbers(100,n.trials = 2, trng=1)

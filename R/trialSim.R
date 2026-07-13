@@ -57,10 +57,26 @@ trialSim <- function(randomisationScheme,
                      nThreads = NULL
 ){
 
+  # This errors when called recursively
+  if(!("RandomisationScheme" %in% class(randomisationScheme))) stop("randomisationScheme should be a randomisation scheme")
+  if(!("Alloc_seq" %in% class(randSequence))){
+    if("list" %in% class(randSequence$sequence)){
+
+      if(!("Alloc_seq" %in% class(randSequence$sequence[[1]]))){
+        stop("CCCCCCC")
+      } else {
+        print(str(randSequence))
+      }
+
+    } else{
+      stop("BBBBBBBBB")
+    }
+
+  }
+
   browser()
   # stop("We're losing class information from randSequence for some reason?")
 
-  if(!("RandomisationScheme" %in% class(randomisationScheme))) stop("randomisationScheme should be a randomisation scheme")
 
   method <- randomisationScheme$method
   settings <-  randomisationScheme$settings
