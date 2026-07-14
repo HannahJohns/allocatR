@@ -2,21 +2,80 @@
 % Please edit documentation in R/trialSim.R
 \name{trialSim}
 \alias{trialSim}
-\title{trialSim() runs recursively if multiple randSequences are provided
-NOTE: we create a copy of the engine, rather than passing by reference.
-This means that if a user runs trialSim() multiple times using a saved
-random sequence, they will get the same resampled data each time as well.}
+\title{Simulate trials}
 \usage{
-trialSim(
-  randomisationScheme,
-  data,
-  replay = FALSE,
-  randSequence = NULL,
-  simple = NULL,
-  nThreads = NULL
-)
+trialSim(randomisationScheme,
+                randSequence = NULL,
+                data = NULL,
+                replay = FALSE,
+                simple=NULL,
+                nThreads=NULL
+                )
+}
+\arguments{
+\item{randomisationScheme}{an object of type \link{RandomisationScheme}}
+
+\item{randSequence}{An object of type \link{Alloc_seq}}
+
+\item{data}{A data frame containing relevant data (e.g. covariates) for participants in simulated trials}
+
+\item{replay}{A logical value. If \code{TRUE} then trial participants are randomised in sequence from the first to last row of \code{data}.
+If \code{FALSE}, then participants are randomly sampled with replacement from \code{data}}
+
+\item{simple}{A logical value. If \code{TRUE} then results of each simulated trial are condensed to a single row.}
+
+\item{nThreads}{Number of parallel threads to use in simulation.}
+}
+\value{
+If \code{simple} is \code{FALSE}, returns a list of results for the simulated trial. This includes:
+
+The following participant-level details:
+\describe{
+\item probabilityLog - the probability of assignment to control for each participant
+\item probabilityLog_covariate - the probability of assignment to control for each participant, just based on covariate information
+\item probabilityLog_group - the probability of assignment to control for each participant, just based on group allocation information alone
+\item rollLog - the random number used to determine treatment assignment
+\item arm - the resulting treatment allocation
+}
+
+And the following participant-level details:
+\describe{
+\item imbalance_std - covariate balance measured using standard tests (test statistic and p-value from the t-test or chi-square test)
+\item imbalance_genodds - covariate balance measured using generalised odds ratios (WMW OR and p-value. Categorical variables are one-hot coded for this evaluation)
+\item prop_random - proportion of interventions where probability of assignment was 0.5
+\item prop_random_covariate - proportion of interventions where probability of assignment (based on covariate information alone) was 0.5
+\item prop_random_group - proportion of interventions where probability of assignment (based on group allocaiton information alone) was 0.5
+\item expected_bias - the average deviation from a probability of 0.5 across all group allocations.
+}
+
+Plus any specific outputs relevant to randomisationScheme.
+
+If \code{simple} is \code{TRUE}, returns a one-row list of summary results containing just the trial-level details above.
+
+If more than one trial was run, The above is returned either as a list (if \code{simple} is \code{FALSE}) or a data frame (if \code{simple} is \code{TRUE})
 }
 \description{
-This is (probably) the correct behaviour to use here because it's internally
-consistent and ensures reproducibility of results.
+Randomise a participant according to the MSB, CS-MSB or CSSize-MSB algorithms.
+}
+\details{
+Size of trial and number of simulated trials are both specified by \link[=Alloc_seq]{randSequence} object.
+
+If \code{replay} is \code{TRUE} then the trial length must equal \code{nrow(data)}.
+
+If relevant, variable types are read from the class of each column in \code{data}.
+Factors are assumed categorical, ordered factors are assumed ordinal and numeric
+are assumed continuous.
+
+See details of functions that produce \link[=RandomisationScheme]{randomisationScheme} for specific details
+of each method.
+}
+\examples{
+data <- synthetic_covariate_data
+
+randScheme <- csmsb(alpha = 0.5, biasParameters=0.7)
+randSeq <- get_randNumbers(100, trng=1)
+trialSim(randomisationScheme=randScheme, randSequence=randSeq,  data=data, replay=FALSE)
+
+randSeq2 <- get_randNumbers(100, n.trials=10, trng=2)
+trialSim(randomisationScheme=randScheme, randSequence=randSeq2,  data=data, replay=FALSE)
 }

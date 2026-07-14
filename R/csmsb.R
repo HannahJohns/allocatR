@@ -31,7 +31,7 @@
 #' \item linear - a single number between 1 and infinity that scales the imbalance measure to calculate a biased coin strength according to the formula 0.5+imbalance*biasParameters
 #' }
 #'
-#' When csmsb() is used with the \link[=trialSim]{\code{trialSim()}} function and with majority or weighted
+#' When csmsb() is used with the \link[=trialSim]{trialSim} function and with majority or weighted
 #' voting, there are a few quirks to its implementation.
 #' \enumerate{
 #'     \item When checking each variable, we assume that a vote is always valid and log the vote as if it is.
@@ -39,7 +39,7 @@
 #' }
 #' This is mainly done so we can log small imbalances for understanding trial behaviour over time.
 #'
-#' When csmsb() is used with the \link[=allocate]{\code{allocate()}} function, the details list in its output
+#' When csmsb() is used with the \link[=allocate]{allocate} function, the details list in its output
 #' will contain the following:
 #'   \itemize{
 #'            \item pVals - p-values indicating imbalance for each covariate
@@ -54,6 +54,17 @@
 #'            \item covBalanceProb=covBalanceProb - the probability of assignent to control if only covariate balance is considered,
 #'            \item groupImbalanceProb=groupImbalanceProb  - the probability of assignent to control if only group allocation balance is considered
 #'     }
+#'
+#'
+#' When csmsb() is used with the \link[=trialSim]{trialSim} function, the details list in its output
+#' will additionally contain the following:
+#'   \itemize{
+#'            \item voteLog - the votes placed by each covariate during each allocation
+#'            \item pValLog - covariate-level p-value for current imbalance
+#'            \item effectLog - The magnitude of the current imbalance
+#'            \item vote_dist - A crosstable shopwing the proportion of times that each covariate voted to bias towards control, treatment, or to abstain from voting.
+#'     }
+#'   Only vote_dist is preserved if \code{simple} is \code{TRUE}
 #'
 #' @returns an object of class RandomisationScheme
 #'

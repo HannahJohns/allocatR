@@ -82,7 +82,7 @@ simple_trialSim <- function(data,
 
     randSequence <- randSequence$sequence
 
-    roll <- randSequence[1,]
+    roll <- randSequence[,1]
 
   }
 

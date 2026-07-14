@@ -5,16 +5,17 @@
 \title{Randomise a participant}
 \usage{
 allocate( randomisationScheme,
+                 randSequence,
                  arm,
                  data = NULL,
                  newData = NULL,
-                 settings = NULL
-                 allocationSequence = NULL,
                  implementation = c("cpp", "R")
                  )
 }
 \arguments{
 \item{randomisationScheme}{an object of type \link{RandomisationScheme}}
+
+\item{randSequence}{An object of type \link{Alloc_seq}}
 
 \item{arm}{An integer vector containing the current treatment assignments (0=control, 1=intervention)}
 
@@ -23,8 +24,6 @@ allocate( randomisationScheme,
 \item{newData}{A one-row data frame with the same columns as \code{data} containning relevant data (e.g. covariates) for the new participant to be assigned}
 
 \item{implementation}{A string indicating which implementation of a given method should be used}
-
-\item{allocationSequence}{An object of type \link{Alloc_seq}}
 }
 \value{
 A list with class \code{Allocation} containing the following:
@@ -44,7 +43,7 @@ If relevant, variable types are read from the class of each column in \code{data
 Factors are assumed categorical, ordered factors are assumed ordinal and numeric
 are assumed continuous.
 
-See details of functions that produce randomisationScheme for specific details
+See details of functions that produce \link[=RandomisationScheme]{randomisationScheme} for specific details
 of each method.
 }
 \examples{
@@ -56,6 +55,6 @@ arm <- rep(0:1, length.out = 30)
 randScheme <- csmsb(alpha = 0.5, biasParameters=0.7)
 randSeq <- get_randNumbers(50)
 
-allocate(randomisationScheme=randScheme, arm=arm, randSequence=randSeq, data=data, newData=newData)
+allocate(randomisationScheme=randScheme,  randSequence=randSeq, arm=arm, data=data, newData=newData)
 
 }
