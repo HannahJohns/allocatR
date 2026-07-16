@@ -1,0 +1,36 @@
+---
+title: "simulation"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{simulation}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+```{r setup}
+library(allocatR)
+```
+
+
+## General principles
+
+### A note about random number generation
+
+## Trial Design 
+
+```
+# Tuning of parameters here
+```
+
+## Trial Analysis
+
+```
+# Rerandomisation tests here
+```

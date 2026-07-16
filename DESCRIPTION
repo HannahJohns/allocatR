@@ -1,19 +1,26 @@
 Package: allocatR
 Type: Package
-Title: What the Package Does (Title Case)
-Version: 1.1.0
+Title: Random Allocation Algorithms For Clinical Trials
+Version: 0.1.0
 Author: Hannah Johns
 Maintainer: Hannah Johns <dr.hannah.johns@gmail.com>
-Description: Implements random allocation algorithms for clinical trials
-License: All Rights Reserved
+Description: Provides algorithms for randomly allocating participants in clinical trials. Contains functions that supports real-time sequential random allocation as well as trial simulations to aid trial design and facilitate re-randomisation tests. 
+License: GPL (>=2.0)
 Encoding: UTF-8
 LazyData: true
 Imports: Rcpp
 LinkingTo: Rcpp
 Suggests: 
-    testthat, genodds
+    testthat,
+    genodds,
+    rTRNG,
+    jsonlite,
+    knitr,
+    rmarkdown,
+    parallel
 Config/testthat/edition: 3
 Config/roxygen2/version: 8.0.0
 Depends: 
     R (>= 3.5)
 RoxygenNote: 7.3.2
+VignetteBuilder: knitr

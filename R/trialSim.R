@@ -104,7 +104,6 @@ trialSim <- function(randomisationScheme,
 
     ## Recursive Call ########################
 
-
     if(is.null(simple)){
       simple <- TRUE
     }
@@ -137,49 +136,57 @@ trialSim <- function(randomisationScheme,
 
       this_sequence = randSequence_details$sequence[[i]]
 
-      this_trng <- switch(randSequence_details$trng_type,
-                          Rcpp_yarn2=rTRNG::yarn2$new(randSequence_details$trng_string),
-                          Rcpp_yarn3=rTRNG::yarn3$new(randSequence_details$trng_string),
-                          Rcpp_yarn4=rTRNG::yarn4$new(randSequence_details$trng_string),
-                          Rcpp_yarn5=rTRNG::yarn5$new(randSequence_details$trng_string),
-                          Rcpp_yarn3s=rTRNG::yarn3s$new(randSequence_details$trng_string),
-                          Rcpp_yarn5s=rTRNG::yarn5s$new(randSequence_details$trng_string),
-                          Rcpp_lcg64=rTRNG::lcg64$new(randSequence_details$trng_string),
-                          Rcpp_lcg64_shift=rTRNG::lcg64_shift$new(randSequence_details$trng_string),
-                          Rcpp_mrg2=rTRNG::mrg2$new(randSequence_details$trng_string),
-                          Rcpp_mrg3=rTRNG::mrg3$new(randSequence_details$trng_string),
-                          Rcpp_mrg4=rTRNG::mrg4$new(randSequence_details$trng_string),
-                          Rcpp_mrg5=rTRNG::mrg5$new(randSequence_details$trng_string),
-                          Rcpp_mrg3s=rTRNG::mrg3s$new(randSequence_details$trng_string),
-                          Rcpp_mrg5s=rTRNG::mrg5s$new(randSequence_details$trng_string),
-                          stop("UNRECOGNISED TRNG ENGINE TYPE")
-      )
+      if(!is.null(randSequence_details$trng_type)){
 
-      # All sequences should be the same size
+        this_trng <- switch(randSequence_details$trng_type,
+                            Rcpp_yarn2=rTRNG::yarn2$new(randSequence_details$trng_string),
+                            Rcpp_yarn3=rTRNG::yarn3$new(randSequence_details$trng_string),
+                            Rcpp_yarn4=rTRNG::yarn4$new(randSequence_details$trng_string),
+                            Rcpp_yarn5=rTRNG::yarn5$new(randSequence_details$trng_string),
+                            Rcpp_yarn3s=rTRNG::yarn3s$new(randSequence_details$trng_string),
+                            Rcpp_yarn5s=rTRNG::yarn5s$new(randSequence_details$trng_string),
+                            Rcpp_lcg64=rTRNG::lcg64$new(randSequence_details$trng_string),
+                            Rcpp_lcg64_shift=rTRNG::lcg64_shift$new(randSequence_details$trng_string),
+                            Rcpp_mrg2=rTRNG::mrg2$new(randSequence_details$trng_string),
+                            Rcpp_mrg3=rTRNG::mrg3$new(randSequence_details$trng_string),
+                            Rcpp_mrg4=rTRNG::mrg4$new(randSequence_details$trng_string),
+                            Rcpp_mrg5=rTRNG::mrg5$new(randSequence_details$trng_string),
+                            Rcpp_mrg3s=rTRNG::mrg3s$new(randSequence_details$trng_string),
+                            Rcpp_mrg5s=rTRNG::mrg5s$new(randSequence_details$trng_string),
+                            stop("UNRECOGNISED TRNG ENGINE TYPE")
+        )
 
-      # We need to know total sample size because we
-      # mihgt randomly resample rows in each sim.
-      # If we do, we need toto jump the seed state ahead
-      # the correct ammount to avoid double-dipping
+        # All sequences should be the same size
+
+        # We need to know total sample size because we
+        # mihgt randomly resample rows in each sim.
+        # If we do, we need toto jump the seed state ahead
+        # the correct ammount to avoid double-dipping
 
 
-      if("Runif" %in% class(this_sequence)) {
-        n <- length(this_sequence)
-      } else if("Permutedblock" %in% class(this_sequence)) {
-        n <- nrow(this_sequence)
+        if("Runif" %in% class(this_sequence)) {
+          n <- length(this_sequence)
+        } else if("Permutedblock" %in% class(this_sequence)) {
+          n <- nrow(this_sequence)
+        } else {
+          stop("Unrecognised sequence type")
+        }
+
+        if(replay){
+          num_to_jump_per_run <- 0 # We're not resampling rows, so there's no extra randomness
+        } else {
+          num_to_jump_per_run <- n # We need n randthis_sequenceom numbers per run
+        }
+
+        # Use a modified randSeq containing just the i-th sequence plus appropriate
+        # RNG engine
+        this_trng$jump((i-1) * num_to_jump_per_run)
+
       } else {
-        stop("Unrecognised sequence type")
-      }
 
-      if(replay){
-        num_to_jump_per_run <- 0 # We're not resampling rows, so there's no extra randomness
-      } else {
-        num_to_jump_per_run <- n # We need n randthis_sequenceom numbers per run
-      }
+        this_trng <- NULL
 
-      # Use a modified randSeq containing just the i-th sequence plus appropriate
-      # RNG engine
-      this_trng$jump((i-1) * num_to_jump_per_run)
+      }
 
       this_randSeq <- list(
         sequence = this_sequence,
@@ -196,19 +203,34 @@ trialSim <- function(randomisationScheme,
       return(thisSim)
     }
 
-    # Feeding through randSequence directly causes problems. Instead, feed
-    # through enough detail to reconstruct it inside the loop
-    randSequence_details = list(
-      sequence = randSequence$sequence,
-      trng_type = class(randSequence$trng),
-      trng_string = randSequence$trng$toString(),
-      class = class(randSeq2$sequence[[1]])
-    )
+
+
+    if(!is.null(randSequence$trng)){
+      # Feeding through randSequence directly causes problems if running in paralell
+      # because trng passes by reference and the pointers become invalid .
+      # Instead, feed through enough detail to reconstruct it inside the loop
+      randSequence_details = list(
+        sequence = randSequence$sequence,
+        trng_type = class(randSequence$trng),
+        trng_string = randSequence$trng$toString(),
+        class = class(randSequence$sequence[[1]])
+      )
+    } else {
+      randSequence_details = list(
+        sequence = randSequence$sequence,
+        trng_type = NULL,
+        trng_string = NULL,
+        class = class(randSequence$sequence[[1]])
+      )
+    }
 
     # Either wrap snow functions or create dummies
     if(nThreads>1)
     {
       cl <- parallel::makeCluster(nThreads)
+
+      # This isn't technically needed if we're using TRNG, but it doesn't hurt
+      parallel::clusterSetRNGStream(cl = cl,.Random.seed)
 
       batchRun <- parallel::parLapply(cl, 1:nSims, batchSimFunction,
                                       randomisationScheme=randomisationScheme,
@@ -262,7 +284,14 @@ trialSim <- function(randomisationScheme,
     #
     # This is (probably) the correct behaviour to use here because it's internally
     # consistent and ensures reproducibility of results.
-    trng <- randSequence$trng$copy()
+
+
+    if(!is.null(randSequence$trng)){
+      trng <- randSequence$trng$copy()
+    } else {
+      trng <- NULL
+    }
+
     rownames(data) <- NULL
     if(replay){
       if(n != nrow(data)) stop("Allocation sequence should be of length nrow(data) if replay is TRUE")
@@ -273,9 +302,7 @@ trialSim <- function(randomisationScheme,
       } else {
         rows <- ceiling(rTRNG::runif_trng(n,min=0,max=nrow(data),engine = trng))
       }
-
       data <- data[rows,]
-
     }
 
     ### Method specific calls ########################

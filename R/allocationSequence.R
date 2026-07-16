@@ -144,17 +144,25 @@ get_permutedBlock <- function(n,
                               )
 {
 
-  if(length(prop_flexible) == 1){
-    if(length(prop_flexible) == 1) prop_flexible <- rep(prop_flexible,length(blockSize))
-  }
+  if(length(prop_flexible) == 1) prop_flexible <- rep(prop_flexible,length(blockSize))
 
   if(any(prop_flexible > 0)){
 
-    if(any(((blockSize*prop_flexible) %% 2) != 0)) stop(sprintf("NEED AND ERROR MESSAGE HERE"))
+    if(any(((blockSize*prop_flexible) %% 2) != 0)){
+      stop(sprintf(
+        "Proportion of flexible blocks must allow for a 1:1 allocation ratio to be maintained\n(even number flexible/inflexible within each block)\n\nThe following combinations are invalid:\n%s",
+        paste(capture.output(print.data.frame(data.frame(
+          `Block Size`=blockSize,
+          `Proportion Flexible`=prop_flexible,
+          `Block Size (Flexible)` = blockSize*prop_flexible,
+          `Block Size (Non-flexible)` = blockSize*(1-prop_flexible),check.names = F
+        )[which(((blockSize*prop_flexible) %% 2) != 0),], row.names = F)),collapse="\n")
+        )
+      )
+    }
 
   } else {
     if(any((blockSize %% 2) != 0)) stop(sprintf("Block sizes should be even"))
-
   }
 
   # RNG preamble

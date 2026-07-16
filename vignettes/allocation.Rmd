@@ -1,0 +1,88 @@
+---
+title: "How to use allocatR in a clinical trial"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{allocation}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+```{r setup}
+library(allocatR)
+```
+
+This vignette covers use of the allocatR package to randomly assign participants
+in a randomised clinical trial. It assumes that R can be connected to your trial
+infrastructure through one of the following:
+* R is run directly on the server containing trial data
+* R is run remotely using an API call to the server containing trial data
+* Randomisation is fully self-contained within e.g. a locally run Shiny app.
+
+The specific method of integration is beyond the scope of this vignette and will
+vary with your implementation. For illustrative purposes, this vignette uses code
+compatible with the Research Electronic Data Capture (REDCap) API. 
+
+## Data import
+### API call
+
+
+
+```
+# Command line args for participant to be randomised
+```
+
+
+```
+# API stuff here
+```
+
+
+### From file
+
+
+```
+# Read from file here
+```
+
+
+## Allocation
+
+
+### Specification of design
+
+
+```
+# Specification here
+```
+
+
+### Execution of design
+
+
+```
+# Allocation here
+```
+
+## Export
+
+### API call
+
+```
+# API stuff here
+```
+
+
+
+### From command line (RScript) call
+
+
+```
+# cat(toJSON()) here
+```
