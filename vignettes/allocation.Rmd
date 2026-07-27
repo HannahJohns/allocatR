@@ -1,5 +1,6 @@
 ---
-title: "How to use allocatR in a clinical trial"
+title: "Using allocatR to allocate participants in a clinical trial"
+
 output: rmarkdown::html_vignette
 vignette: >
   %\VignetteIndexEntry{allocation}
@@ -23,32 +24,95 @@ in a randomised clinical trial. It assumes that R can be connected to your trial
 infrastructure through one of the following:
 * R is run directly on the server containing trial data
 * R is run remotely using an API call to the server containing trial data
-* Randomisation is fully self-contained within e.g. a locally run Shiny app.
+* Randomisation is fully self-contained within e.g. a locally run Shiny app for managing randomisation.
 
 The specific method of integration is beyond the scope of this vignette and will
 vary with your implementation. For illustrative purposes, this vignette uses code
 compatible with the Research Electronic Data Capture (REDCap) API. 
 
 ## Data import
-### API call
 
+
+
+```{r}
+
+# If randomisation script is called from a command line call using Rscript,
+# the ID can be passed as an argument
+
+# args = commandArgs(trailingOnly = TRUE)
+# id <- args[1]
+
+id <- "5"
+
+```
+
+
+```{r}
+# Use REDCap's API to load data
+
+library(REDCapR) # Load the package into the current R session.
+uri   <- "https://redcap-dev-2.ouhsc.edu/redcap/api/"
+token <- "9A068C425B1341D69E83064A2D273A70" # simple
+
+read_data <- as.data.frame(redcap_read(redcap_uri = uri, token = token)$data)
+
+# In a trial data set, the arm would be one of the columns read from above
+read_data$arm <- c(0,1,0,1,NA)
+
+# Structure the data how we need it to be structured
+# We use BMI and read_data as examples.
+read_data <- existing_data[,c("record_id","age","sex","bmi","ethnicity","arm")]
+read_data$ethnicity <- factor(read_data$ethnicity, ordered=FALSE)
+read_data$sex <- factor(read_data$sex, ordered=FALSE)
+
+
+# The allocation function feeds in data separately for participants that have
+# been randomised, and the participant to be randomised. We need to separate this out.
+
+existing_data <- read_data[which(read_data$record_id != id),]
+new_data <- read_data[which(read_data$record_id == id),]
 
 
 ```
-# Command line args for participant to be randomised
+
+Alternatively, data can be written to disk, by some other mechanism and then read
+by R using e.g. read.csv()
+
+Regardless of the method of reading data, the final step prior to randomisation
+is to perform checks of data quality. If randomisation requires data have to
+complete data (all current methods need complete data), missing data in
+existing data will break randomisation. The easiest fix for this is to simply allocate
+imbalance based on complete case current data.
+
+**NOTE** this workflow means that record deletion (or participants who lose these baseline variables
+later) may lead to re-use of the random sequence. To account for this, use the optional offset
+argument in allocate() to jump the sequence ahead by some number of allocations.
+
+```{r}
+
+# Run randomisation only using those people with complete data (i.e. treatment assigned and all relevant covariates observed)
+
+has_missing <- do.call("c",
+        sapply(1:ncol(existing_data),function(i){which(is.na(existing_data[,i]))})
+)
+
+if(length(has_missing)>0){
+  existing_data[-has_missing,]
+}
+
 ```
 
+Also check for anything that looks wrong about the data, and error if we're missing
+data on the new person
 
-```
-# API stuff here
-```
+```{r}
 
+if(!is.na(new_data$arm)) stop(sprintf("ID %s is already randomised",id))
 
-### From file
+for(i in c("age","sex","bmi","ethnicity")){
+  if(is.na(new_data[,i])) stop(sprintf("ID %s is missing a value for %s",id,i))
+}
 
-
-```
-# Read from file here
 ```
 
 
@@ -58,23 +122,27 @@ compatible with the Research Electronic Data Capture (REDCap) API.
 ### Specification of design
 
 
-```
+```{r}
 # Specification here
 ```
-
 
 ### Execution of design
 
 
-```
+```{r}
 # Allocation here
+
+
+allocate()
+
+
 ```
 
 ## Export
 
 ### API call
 
-```
+```{r}
 # API stuff here
 ```
 
@@ -83,6 +151,6 @@ compatible with the Research Electronic Data Capture (REDCap) API.
 ### From command line (RScript) call
 
 
-```
+```{r}
 # cat(toJSON()) here
 ```

@@ -27,11 +27,12 @@ simple_allocate <- function(data,
                             arm,
                             newData,
                             settings,
-                            randSequence
+                            randSequence,
+                            offset
 ){
-  # Extract out and process inputs
-  rand_number <- length(arm)+1
 
+  # Extract out and process inputs
+  rand_number <- length(arm)+1+offset
 
   # Check that only one sequence provided
   if("list" %in% class(randSequence$sequence)){

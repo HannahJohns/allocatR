@@ -103,11 +103,12 @@ csmsb_allocate_cpp <- function(data,
                                arm,
                                newData,
                                settings,
-                               randSequence
+                               randSequence,
+                               offset
                        ){
 
   # Extract out and process inputs
-  rand_number <- nrow(data)+1
+  rand_number <- nrow(data)+1+offset
 
   alpha <- settings$alpha
   biasParameters <- settings$biasParameters
@@ -583,10 +584,11 @@ csmsb_allocate_R <- function(data,
                              arm,
                              newData,
                              settings,
-                             randSequence){
+                             randSequence,
+                             offset){
 
   # Extract out and process inputs
-  rand_number <- nrow(data)+1
+  rand_number <- nrow(data)+1+offset
 
   alpha <- settings$alpha
   biasParameters <- settings$biasParameters

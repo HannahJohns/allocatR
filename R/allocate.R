@@ -7,6 +7,7 @@
 #'                  arm,
 #'                  data = NULL,
 #'                  newData = NULL,
+#'                  offset=0,
 #'                  implementation = c("cpp", "R")
 #'                  )
 #'
@@ -14,6 +15,7 @@
 #' @param arm An integer vector containing the current treatment assignments (0=control, 1=intervention)
 #' @param data A data frame with \code{length(arm)} rows containing relevant data (e.g. covariates) for currently assigned participants
 #' @param newData A one-row data frame with the same columns as \code{data} containning relevant data (e.g. covariates) for the new participant to be assigned
+#' @param offset A positive integer to increase the allocation sequence step by. Used to prevent re-use of the allocation sequence.
 #' @param randSequence An object of type \link{Alloc_seq}
 #' @param implementation A string indicating which implementation of a given method should be used
 #'
@@ -51,6 +53,7 @@ allocate <- function(  randomisationScheme,
                        arm,
                        data = NULL,
                        newData = NULL,
+                       offset = 0,
                        implementation = NULL
 ){
 
@@ -71,7 +74,8 @@ allocate <- function(  randomisationScheme,
                                    arm = arm,
                                    newData = newData,
                                    settings = settings,
-                                   randSequence = randSequence
+                                   randSequence = randSequence,
+                                   offset = offset
       )
 
     } else if (implementation == "R"){
@@ -80,7 +84,8 @@ allocate <- function(  randomisationScheme,
                                    arm = arm,
                                    newData = newData,
                                    settings = settings,
-                                   randSequence = randSequence
+                                   randSequence = randSequence,
+                                   offset = offset
       )
 
     }
@@ -93,7 +98,8 @@ allocate <- function(  randomisationScheme,
                                arm = arm,
                                newData = newData,
                                settings = settings,
-                               randSequence = randSequence
+                               randSequence = randSequence,
+                               offset = offset
     )
 
 
