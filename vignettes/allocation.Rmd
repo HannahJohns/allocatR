@@ -27,12 +27,20 @@ infrastructure through one of the following:
 * Randomisation is fully self-contained within e.g. a locally run Shiny app for managing randomisation.
 
 The specific method of integration is beyond the scope of this vignette and will
-vary with your implementation. For illustrative purposes, this vignette uses code
-compatible with the Research Electronic Data Capture (REDCap) API. 
+vary with your implementation. This vignette assumes that randomisation code is
+being run on a server containing trial data, called via RScript shell command
+from within the database infrastructure (e.g. a PHP shell_exec call, with appropriate input sanitation).
+It also assumes that the database infrasturcture allows use of the 
+Research Electronic Data Capture (REDCap) API, but these code chunks
+can be swapped out for whatever is relevant.
+
+Data is read using the REDCap API, but the result is written to the database by passing
+the treatment assignment to some other program that will handle write access. This
+is a somewhat impractical approach in practice (i.e. in practice R would either
+use an API for both read and write steps,or would not use the API at all).
+It is used here for illustrative purposes only.
 
 ## Data import
-
-
 
 ```{r}
 
@@ -50,9 +58,11 @@ id <- "5"
 ```{r}
 # Use REDCap's API to load data
 
-library(REDCapR) # Load the package into the current R session.
+library(REDCapR)
+
+# This token and URL are taken from the REDCapR vignettes and should be replaced
 uri   <- "https://redcap-dev-2.ouhsc.edu/redcap/api/"
-token <- "9A068C425B1341D69E83064A2D273A70" # simple
+token <- "9A068C425B1341D69E83064A2D273A70"
 
 read_data <- as.data.frame(redcap_read(redcap_uri = uri, token = token)$data)
 
@@ -61,7 +71,7 @@ read_data$arm <- c(0,1,0,1,NA)
 
 # Structure the data how we need it to be structured
 # We use BMI and read_data as examples.
-read_data <- existing_data[,c("record_id","age","sex","bmi","ethnicity","arm")]
+read_data <- read_data[,c("record_id","age","sex","bmi","ethnicity","arm")]
 read_data$ethnicity <- factor(read_data$ethnicity, ordered=FALSE)
 read_data$sex <- factor(read_data$sex, ordered=FALSE)
 
@@ -75,8 +85,8 @@ new_data <- read_data[which(read_data$record_id == id),]
 
 ```
 
-Alternatively, data can be written to disk, by some other mechanism and then read
-by R using e.g. read.csv()
+Alternatively, data can be written to disk by some other mechanism and then read
+by R using e.g. read.csv().
 
 Regardless of the method of reading data, the final step prior to randomisation
 is to perform checks of data quality. If randomisation requires data have to
@@ -84,9 +94,12 @@ complete data (all current methods need complete data), missing data in
 existing data will break randomisation. The easiest fix for this is to simply allocate
 imbalance based on complete case current data.
 
-**NOTE** this workflow means that record deletion (or participants who lose these baseline variables
-later) may lead to re-use of the random sequence. To account for this, use the optional offset
-argument in allocate() to jump the sequence ahead by some number of allocations.
+**NOTE** this workflow means that record deletion, or removal of a baseline covariate,
+may lead to re-use of the random sequence. While in theory no record should be deleted
+in practice and baseline covariate information should not be deleted, use the
+optional offset argument in allocate() can be used to jump the sequence ahead
+by a specified some number of allocations if this is needed.
+The offset number will need to be calculated from the read data.
 
 ```{r}
 
@@ -103,7 +116,7 @@ if(length(has_missing)>0){
 ```
 
 Also check for anything that looks wrong about the data, and error if we're missing
-data on the new person
+data on the new person.
 
 ```{r}
 
@@ -118,39 +131,45 @@ for(i in c("age","sex","bmi","ethnicity")){
 
 ## Allocation
 
-
-### Specification of design
+With data read and pre-processed, allocation can occur. 
+The first step of allocation is to specify the design and randomisation sequence.
+Ideally, this should be done ahead of time and stored on the machine as e.g. an RDS file.
+This is especially important if the randomisation sequence is constrained
+(e.g. permuted blocks), as it may take time to generate the sequence.
 
 
 ```{r}
-# Specification here
+randScheme <- csmsb(alpha = 0.4,biasParameters = 0.7)
+randSequence <- get_randNumbers(500,n.trials = 1, trng = 1234)
 ```
 
-### Execution of design
-
+Random allocation is then calculated using the package.
 
 ```{r}
-# Allocation here
 
-
-allocate()
-
+new_assignment <- allocate(newData = new_data[,c("age","sex","bmi","ethnicity")], 
+         data = existing_data[,c("age","sex","bmi","ethnicity")],
+         arm = existing_data[,c("arm")],
+         offset = 0,
+         randomisationScheme =randScheme,
+         randSequence = randSequence)
 
 ```
 
 ## Export
 
-### API call
+The final step is to write the result back into the database. This can be done
+either via API call (following a similar structure as used earlier in the vignette to read data),
+or by printing the results of randomisation to console, to be intercepted by another program.
+This vignette illustrates the second approach.
+
+If this code is called by an Rscript command line argument, then the infrastructure that
+called the code will be able to capture whatever is output. Therefore, the simplest
+way to communicate the results of randomisation back to trial database infrastructure
+is to print the results of randomisation as a string which encodes the randomisation
+as a JSON object. This JSON object can then be parsed by code within the trial database
+infrastructure.
 
 ```{r}
-# API stuff here
-```
-
-
-
-### From command line (RScript) call
-
-
-```{r}
-# cat(toJSON()) here
+cat(jsonlite::toJSON(new_assignment))
 ```

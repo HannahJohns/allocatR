@@ -19,18 +19,157 @@ library(allocatR)
 ```
 
 
-## General principles
+# Introduction
 
-### A note about random number generation
+## A note about random number generation
+[It is strongly recommended](https://doi.org/10.1002/sim.8086) that a single seed is used to control all random number generation in order to avoid unintended dependence between simulated datasets. To facilitate this, the allocatR package by default uses Tina's Random Number Generator, which provides a high degree of control over the random number generator. Using it means that the same random seed that was used to create the allocation sequence can be used for re-randomisation tests). 
 
-## Trial Design 
+# Trial Design 
+
+```{r}
+
+data <- synthetic_covariate_data
+
+number_trials <- 1000
+
+settingGrid <- expand.grid(alpha = seq(0.05,0.95,by=0.05),
+                           coinStrength = c(0.6,0.7,0.75),
+                           sample_size = 50)
+
+settingGrid$n_random_needed <- settingGrid$sample_size * number_trials
+
+settingGrid$seedJump <- cumsum(settingGrid$n_random_needed) - settingGrid$n_random_needed
+
+settingGrid_results <- pbapply::pblapply(1:nrow(settingGrid), function(i){
+
+  data <- synthetic_covariate_data
+  this_scheme <- csmsb(alpha = settingGrid$alpha[i],biasParameters = settingGrid$coinStrength[i])    
+  randSeq <- get_randNumbers(settingGrid$sample_size[i],n.trials = number_trials, trng = 1234, jump_trng = settingGrid$seedJump[i])
+  
+  trial_results <- trialSim(randomisationScheme=randScheme,
+                            randSequence=randSeq, 
+                            data=data,
+                            replay=FALSE,
+                            simple = TRUE
+                            )
+  
+  # Summarise results
+  trial_summary <- lapply(c(0.5,0.8,0.9,0.95,0.99), function(q){
+    
+    cbind(settingGrid[i,,drop=F],
+    data.frame(quantile = q,
+               
+               
+               prop_random = quantile(trial_results$prop_random, probs = 1-q),
+               group_imbalance = quantile(abs(trial_results$n1-trial_results$n0), probs = 1-q),
+               std_p_cov1 = quantile(abs(trial_results$std_p_cov1), probs = 1-q),
+               std_p_cov2 = quantile(abs(trial_results$std_p_cov2), probs = 1-q),
+               std_p_cov3 = quantile(abs(trial_results$std_p_cov3), probs = 1-q),
+               std_p_cov4 = quantile(abs(trial_results$std_p_cov4), probs = 1-q),
+               
+               
+               genodds_cov1 = quantile(exp(abs(trial_results$genodds_imbalance_cov1)), probs = q),
+               genodds_cov2 = quantile(exp(abs(trial_results$genodds_imbalance_cov2)), probs = q),
+               genodds_cov3A = quantile(exp(abs(trial_results$`genodds_imbalance_cov3:A`)), probs = q),
+               genodds_cov3B = quantile(exp(abs(trial_results$`genodds_imbalance_cov3:B`)), probs = q),
+               genodds_cov3C = quantile(exp(abs(trial_results$`genodds_imbalance_cov3:C`)), probs = q),
+               genodds_cov4 = quantile(exp(abs(trial_results$genodds_imbalance_cov4)), probs = q)
+               )
+    )
+    
+  })
+  
+  trial_summary <- do.call("rbind",trial_summary)
+  trial_summary
+})
+
+
+settingGrid_results
 
 ```
-# Tuning of parameters here
+
+# Trial Analysis (re-randomisation tests)
+
+The same trialsim function can also be used to facilitate re-randomisation tests
+per [FDA guidance](https://www.fda.gov/media/78495/download).
+
+
+```{r}
+
+# This code block sets up an illustrative trial dataset with allocations generated
+# using this package.
+
+data <- synthetic_covariate_data
+randScheme <- csmsb(alpha = 0.5, biasParameters=0.7)
+randSeq <- get_randNumbers(50, trng=1234)
+trial_results <- trialSim(randomisationScheme=randScheme, randSequence=randSeq,  data=data, replay=TRUE)
+
+data$arm <- trial_results$arm
+
+# Randomly generate some outcome data. This will not interfere with rerandomisation tests, 
+# as we're using tina's RNG to govern rerandomisation.
+set.seed(1)
+data$outcome <- 0.5*data$cov1 +
+                0.3*data$cov2 +
+                c(A=0,B=0.1,C=-0.1)[data$cov3] +
+                c(Low=0.05,Medium=0.1,High=0.2)[data$cov4] +
+                c(control=0,treatment=0.8)[data$arm]+rnorm(nrow(data),mean = 0,sd=1)
+
 ```
 
-## Trial Analysis
 
+
+
+```{r}
+
+
+# Create a function that estimates 
+get_pointestimate <- function(x){diff(tapply(x$outcome,x$arm,mean))}
+
+
+# The number of trials should be much higher than 1000 in practice. 
+rerandSeq <- get_randNumbers(50,n.trials = 1000, trng=1234, jump_trng = 50)
+
+rerand_sequences <- trialSim(
+          randomisationScheme = randScheme,
+          randSequence = rerandSeq,
+          data=data[,c("cov1","cov2","cov3","cov4")],
+          simple = FALSE,
+          replay = TRUE
+          )
+
+
+# For each rerandomisation sequence we generated
+rerand_results <- sapply(rerand_sequences, function(x,data,get_pointestimate){
+  
+  # Replace the actual treatment allocation with the new allocation,
+  # leaving the outcome unaffected.
+  # This ensures the null hypothesis (no causal link between treatment allocation
+  # and outcome) is true.
+  
+  rerandomised_data <- data 
+  rerandomised_data$arm <- x$arm
+  get_pointestimate(rerandomised_data)
+  
+},data=data,get_pointestimate=get_pointestimate)
+
+
+# A two-sided p-value is estimated from the number of times a more
+# extreme result is observed under re-randomisation.
+
+pval <- mean(abs(rerand_results) >= abs(get_pointestimate(data)))
+
+# There will be monte-carlo error arround this estimated p-value, which
+# should be quantified. Increasing the number of re-randomisations to run
+# will reduce this error.
+
+pval_ci <- binom.test(x = sum(abs(rerand_results) >= abs(get_pointestimate(data))),
+                      n=length(rerand_results),
+                      conf.level = 0.95)$conf.int
+
+
+
+print(pval)
+print(pval_ci)
 ```
-# Rerandomisation tests here
-```
+
