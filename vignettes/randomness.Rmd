@@ -1,7 +1,0 @@
----
-title: "Random Sequence Generation"
-output: html_document
----
-
-
-

@@ -22,6 +22,7 @@ library(allocatR)
 This vignette covers use of the allocatR package to randomly assign participants
 in a randomised clinical trial. It assumes that R can be connected to your trial
 infrastructure through one of the following:
+
 * R is run directly on the server containing trial data
 * R is run remotely using an API call to the server containing trial data
 * Randomisation is fully self-contained within e.g. a locally run Shiny app for managing randomisation.

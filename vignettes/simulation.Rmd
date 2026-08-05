@@ -21,70 +21,192 @@ library(allocatR)
 
 # Introduction
 
+This vignette describes how to simulate trials in the allocatR package, either for
+trial design (e.g. selecting specific paramaters for a randomisation approach) or
+for the purposes of conducting rerandomisation tests. 
+
+## A note about multithreading
+If the parallel package is installed, allocatR will by default use parallel processing
+for simulating trials (defaulting to 80% of available threads). If the number of
+simulated trials is small, disabling this feature (by setting nThreads=1) may lead to
+faster run-times due to reduced computational overhead.
+
 ## A note about random number generation
-[It is strongly recommended](https://doi.org/10.1002/sim.8086) that a single seed is used to control all random number generation in order to avoid unintended dependence between simulated datasets. To facilitate this, the allocatR package by default uses Tina's Random Number Generator, which provides a high degree of control over the random number generator. Using it means that the same random seed that was used to create the allocation sequence can be used for re-randomisation tests). 
+[It is strongly recommended](https://doi.org/10.1002/sim.8086) that a single
+seed is used to control all random number generation in order to avoid unintended
+dependence between simulated datasets. The allocatR package facilitates this
+by using Tina's Random Number Generator, which provides a high degree of control
+over the random number generator. Using it means that a single random seed can be
+specified at the beginning of the file, and then the seed state can be jumped ahead
+across simulations.
+
+In the context of trial design, jumping the seed state ahead in this manner
+satisfies [FDA guidance](https://www.fda.gov/media/78495/download) against
+using a single consistent seed for all simulation scenarios (which can cause
+consistently atypical results across scenarios).
+
+In the context of trial analysis (with re-randomisation tests), it allows a
+single initial seed to be used for both generating the randomisation sequence
+and for re-randomisation tests.
 
 # Trial Design 
 
+Simulation during trial design is conducted for the purposes of evaluating
+the operating characteristics of the randomisation algorithm under different
+configurations, to select the settings that best suit the needs of the trial.
+
+allocatR does not support real-time generation of variable distributions. Instead,
+it uses bootstrap resampling from a provided dataset (if the replay setting is FALSE).
+A large dataset that reflects the distribution and variability of all variables should
+be generated for this purpose if synthetic data is being used.
+
+```{r}
+data <- synthetic_covariate_data
+```
+
+
+We explore a range of trial options in a grid search. Because we are explicitly controlling
+the random seed state, we need to estimate the amount of random numbers that each simulated trial will use.
+This is used to jump the seed state ahead as we iterate through the grid search.
+
+If get_randNumbers(n,...) is used to generate a random sequence, then n random
+numbers will be used to create the random sequence.
+
+If get_permutedBlock(n,blockSize,max_attempts,...) is used to generate a random sequence,
+this number will vary from sequence to sequence, as it will depend on
+
+* The value of n
+* The length of blockSize
+* The value of blockSize
+* The value of max_attempts
+
+An upper bound for this number is max_attempts * ( n/min(blockSize) * (1 + max(blockSize)) + length(blockSize) * max(blockSize) )
+
+which assumes that:
+
+* All attempts to generate a random sequence that meets the criteria are exhausted
+* Block size sequence consistently overshoots the target and requires repeated back-tracking and re-generation of the sequence
+* All blocks are of the maximum possible size when they are permuted
+
+If replay = FALSE, then an additional n random numbers will be used for bootstrap resampling in each trial.
+
+Over-estimating the number of random numbers used carries no consequence other than a marginal increase in computational time, as the random number generator will need to jump slightly further ahead. When in doubt, be overly conservative with this number. 
+
+
 ```{r}
 
-data <- synthetic_covariate_data
-
+# In practice, 1000 simulations may be too low.
 number_trials <- 1000
 
+
+# Set up the grid search
 settingGrid <- expand.grid(alpha = seq(0.05,0.95,by=0.05),
                            coinStrength = c(0.6,0.7,0.75),
                            sample_size = 50)
 
-settingGrid$n_random_needed <- settingGrid$sample_size * number_trials
+settingGrid$n_random_needed <- number_trials * (
+                                settingGrid$sample_size + # We use n random numbers per trial to create the random sequence
+                                settingGrid$sample_size   # We use n random numbers per trial for bootstrap selection
+                                )
 
+# Estimate the 
 settingGrid$seedJump <- cumsum(settingGrid$n_random_needed) - settingGrid$n_random_needed
 
+```
+
+Operating characteristics can be summarised within each iteration of the grid search to reduce the total volume of output (i.e. rather than store results of each simulation run, instead provide a summary for each iteration of the grid search).
+
+In this vignette, we summarise the results using quantiles to provide "one in X" trials chance estimates for different values. This summary approach describes the anticipated worst-case performance of each operating characteristic. The specific quantile depends on if a higher value is considered good or bad (i.e. for a one-in five chance, the quanitle will either be 20th or 80th depending on if a higher value is considered good or bad).
+
+
+```{r}
+
+# Set the initial seed
+seed <- 1234
+
+# For each iteration of the grid search
 settingGrid_results <- pbapply::pblapply(1:nrow(settingGrid), function(i){
 
   data <- synthetic_covariate_data
   this_scheme <- csmsb(alpha = settingGrid$alpha[i],biasParameters = settingGrid$coinStrength[i])    
-  randSeq <- get_randNumbers(settingGrid$sample_size[i],n.trials = number_trials, trng = 1234, jump_trng = settingGrid$seedJump[i])
+  randSeq <- get_randNumbers(settingGrid$sample_size[i],n.trials = number_trials, trng = seed, jump_trng = settingGrid$seedJump[i])
   
-  trial_results <- trialSim(randomisationScheme=randScheme,
+  trial_results <- trialSim(randomisationScheme=this_scheme,
                             randSequence=randSeq, 
                             data=data,
-                            replay=FALSE,
-                            simple = TRUE
+                            replay=FALSE, #The allocation order is not known in advance, so we should not resample every record in order. 
+                            simple = TRUE, #We only care about operating characteristics
+                                          # so there's no need to report full details of the simulation 
+                                          # set to FALSE if a custom operating characteristic is being estimated that needs this extra info.
+                            nThreads = 1
                             )
   
-  # Summarise results
+  # If custom operating characteristics are being created based on the full simulation results, then they would be created here prior to
+  # the summary step.
+  
+  
+  # Summarise results for these simulated trials.
+  # There are many operating characteristics that could be examined here, and
+  # many ways of summarising them. Here we summarise using "worst case" quantiles,
+  # i.e. how many randomisations are completely fair, how bad is the imbalance, etc
+  # is at different quantiles. We then describe these as being a "1 in X chance" of
+  # having a result at least this bad.
+  
   trial_summary <- lapply(c(0.5,0.8,0.9,0.95,0.99), function(q){
     
     cbind(settingGrid[i,,drop=F],
-    data.frame(quantile = q,
+    data.frame(quantile = sprintf("1 in %d chance",round(1/(1-q))),
                
+               # A low value is bad 
+               prop_random = quantile(trial_results$prop_random, probs = 1-q,na.rm = TRUE),
+               group_imbalance = quantile(abs(trial_results$n1-trial_results$n0), probs = 1-q,na.rm = TRUE),
+               std_p_cov1 = quantile(abs(trial_results$std_p_cov1), probs = 1-q,na.rm = TRUE),
+               std_p_cov2 = quantile(abs(trial_results$std_p_cov2), probs = 1-q,na.rm = TRUE),
+               std_p_cov3 = quantile(abs(trial_results$std_p_cov3), probs = 1-q,na.rm = TRUE),
+               std_p_cov4 = quantile(abs(trial_results$std_p_cov4), probs = 1-q,na.rm = TRUE),
                
-               prop_random = quantile(trial_results$prop_random, probs = 1-q),
-               group_imbalance = quantile(abs(trial_results$n1-trial_results$n0), probs = 1-q),
-               std_p_cov1 = quantile(abs(trial_results$std_p_cov1), probs = 1-q),
-               std_p_cov2 = quantile(abs(trial_results$std_p_cov2), probs = 1-q),
-               std_p_cov3 = quantile(abs(trial_results$std_p_cov3), probs = 1-q),
-               std_p_cov4 = quantile(abs(trial_results$std_p_cov4), probs = 1-q),
-               
-               
-               genodds_cov1 = quantile(exp(abs(trial_results$genodds_imbalance_cov1)), probs = q),
-               genodds_cov2 = quantile(exp(abs(trial_results$genodds_imbalance_cov2)), probs = q),
-               genodds_cov3A = quantile(exp(abs(trial_results$`genodds_imbalance_cov3:A`)), probs = q),
-               genodds_cov3B = quantile(exp(abs(trial_results$`genodds_imbalance_cov3:B`)), probs = q),
-               genodds_cov3C = quantile(exp(abs(trial_results$`genodds_imbalance_cov3:C`)), probs = q),
-               genodds_cov4 = quantile(exp(abs(trial_results$genodds_imbalance_cov4)), probs = q)
+               # A high value is bad 
+               genodds_cov1 = quantile(exp(abs(trial_results$genodds_imbalance_cov1)), probs = q,na.rm = TRUE),
+               genodds_cov2 = quantile(exp(abs(trial_results$genodds_imbalance_cov2)), probs = q,na.rm = TRUE),
+               genodds_cov3A = quantile(exp(abs(trial_results$`genodds_imbalance_cov3:A`)), probs = q,na.rm = TRUE),
+               genodds_cov3B = quantile(exp(abs(trial_results$`genodds_imbalance_cov3:B`)), probs = q,na.rm = TRUE),
+               genodds_cov3C = quantile(exp(abs(trial_results$`genodds_imbalance_cov3:C`)), probs = q,na.rm = TRUE),
+               genodds_cov4 = quantile(exp(abs(trial_results$genodds_imbalance_cov4)), probs = q,na.rm = TRUE)
                )
     )
     
   })
   
+  # Condense this summary into a data frame and return it
   trial_summary <- do.call("rbind",trial_summary)
   trial_summary
 })
 
+settingGrid_results <- do.call("rbind",settingGrid_results)
 
-settingGrid_results
+```
+
+Finally, the operating characteristics can be examined across the different
+settings and configurations to identify which settings are most appropriate for the trial.
+
+```{r}
+
+library(dplyr)
+library(tidyr)
+library(ggplot2)
+settingGrid_results %>%
+  mutate(quantile = factor(quantile, levels = sprintf("1 in %d chance",c(2,5,10,20,100)))) %>%
+  select(-starts_with("genodds")) %>%
+  pivot_longer(starts_with("std_p"),
+               names_to = "variable",
+               values_to = "pval") %>%
+  mutate(variable = gsub("std_p_","",variable)) %>% 
+  ggplot(aes(x=prop_random,y=pval, color=variable))+
+  geom_point()+
+  facet_grid(coinStrength~quantile)+
+  theme_bw()+
+  theme(strip.background = element_rect(fill="white"))+
+  labs(x="Proportion of fair randomisations (Higher is better)", y="Worst-case p-value (Higher is better)")
 
 ```
 
@@ -101,7 +223,7 @@ per [FDA guidance](https://www.fda.gov/media/78495/download).
 
 data <- synthetic_covariate_data
 randScheme <- csmsb(alpha = 0.5, biasParameters=0.7)
-randSeq <- get_randNumbers(50, trng=1234)
+randSeq <- get_randNumbers(50, trng=5678)
 trial_results <- trialSim(randomisationScheme=randScheme, randSequence=randSeq,  data=data, replay=TRUE)
 
 data$arm <- trial_results$arm
@@ -117,33 +239,47 @@ data$outcome <- 0.5*data$cov1 +
 
 ```
 
+The random seed should be jumped following the same logic as above, though in this case
+only one sequence's worth of random numbers needs to be jumped ahead
+(as we only used one sequence in the trial).
 
+Permutation tests are then run by looping over each simulated allocation and
+estimating the outcome measure within each sequence.
+
+Note that for this purpose, [the sequence of randomisations should be maintained](https://doi.org/10.1016/j.spl.2010.12.018).
+AllocatR assumes that randomisation occurs starting with the first row of the dataset and ends with the last row.
 
 
 ```{r}
 
-
-# Create a function that estimates 
+# Create a function that returns the treatment effect estimate when provided a data frame
+# This will be used to both get the point estimate of the actual treatment effect and
+# the point estimate under each simulated re-randomisation
 get_pointestimate <- function(x){diff(tapply(x$outcome,x$arm,mean))}
 
 
-# The number of trials should be much higher than 1000 in practice. 
-rerandSeq <- get_randNumbers(50,n.trials = 1000, trng=1234, jump_trng = 50)
+# Set up random sequences for re-randomisation test
+rerandSeq <- get_randNumbers(50,
+                             n.trials = 1000, # The number of trials should be much higher than 1000 in practice. 
+                             trng=5678, # Same seed that was used to create the real trial sequence
+                             jump_trng = 50 # We used 50 random numbers when creating the sequence that was used in the trial
+                             )
 
 rerand_sequences <- trialSim(
           randomisationScheme = randScheme,
           randSequence = rerandSeq,
           data=data[,c("cov1","cov2","cov3","cov4")],
-          simple = FALSE,
-          replay = TRUE
+          simple = FALSE, # We need access to the full simulated results which includes treatment allocations.
+          replay = TRUE, # We know the order the data entered the trial and want to hold this sequence fixed.
+          nThreads = 1
           )
 
 
-# For each rerandomisation sequence we generated
+# For each rerandomisation sequence we generated, estimate the point estimate using the new treatment assignments.
 rerand_results <- sapply(rerand_sequences, function(x,data,get_pointestimate){
   
   # Replace the actual treatment allocation with the new allocation,
-  # leaving the outcome unaffected.
+  # leaving the outcomes and covariates unaffected.
   # This ensures the null hypothesis (no causal link between treatment allocation
   # and outcome) is true.
   
@@ -155,19 +291,16 @@ rerand_results <- sapply(rerand_sequences, function(x,data,get_pointestimate){
 
 
 # A two-sided p-value is estimated from the number of times a more
-# extreme result is observed under re-randomisation.
+# extreme result is observed under re-randomisation (0 is neutral/no effect).
 
 pval <- mean(abs(rerand_results) >= abs(get_pointestimate(data)))
 
-# There will be monte-carlo error arround this estimated p-value, which
-# should be quantified. Increasing the number of re-randomisations to run
-# will reduce this error.
+# There will be monte-carlo error around this estimated p-value, which
+# should be quantified. Increasing n.trials will reduce this error.
 
 pval_ci <- binom.test(x = sum(abs(rerand_results) >= abs(get_pointestimate(data))),
                       n=length(rerand_results),
                       conf.level = 0.95)$conf.int
-
-
 
 print(pval)
 print(pval_ci)
