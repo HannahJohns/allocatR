@@ -4,7 +4,7 @@
 \alias{get_permutedBlock}
 \title{Generate permuted blocks for treatment allocation}
 \usage{
-get_randNumbers(n, n.trials = 1, trng=NULL, jump_trng=0)
+get_permutedBlock(n, blockSize, prop_flexible=0, max_prop_flexible = 1, max_attempts = 1000, n.trials=1, trng = NULL, jump_trng = 0)
 }
 \arguments{
 \item{n}{length of random sequence to generate (i.e. maximum number of participants)}
@@ -13,7 +13,7 @@ get_randNumbers(n, n.trials = 1, trng=NULL, jump_trng=0)
 
 \item{prop_flexible}{a vector of length \code{length(blockSize)} that contains the proportion of allocations that should be marked as flexible}
 
-\item{max_prop_flexible}{the maximum number of allocations that can should be flexible. If the generated number is above this maximum, regenerate the sequence.}
+\item{max_prop_flexible}{the maximum number of total allocations that should be flexible. If the generated number is above this maximum, regenerate the sequence.}
 
 \item{max_attempts}{the maximum number of attempts to regenerate a sequence before returning an error}
 

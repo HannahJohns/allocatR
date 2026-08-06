@@ -1,7 +1,7 @@
 #' Simulate trials
 #'
 #' @description
-#' Randomise a participant according to the MSB, CS-MSB or CSSize-MSB algorithms.
+#' Simulate one or more trials.
 #'
 #' @usage trialSim(randomisationScheme,
 #'                 randSequence = NULL,
@@ -60,7 +60,9 @@
 #'
 #' If \code{simple} is \code{TRUE}, returns a one-row list of summary results containing just the trial-level details above.
 #'
-#' If more than one trial was run, The above is returned either as a list (if \code{simple} is \code{FALSE}) or a data frame (if \code{simple} is \code{TRUE})
+#' If more than one trial was run, he above is returned either as a list (if \code{simple} is \code{FALSE}) or a data frame (if \code{simple} is \code{TRUE})
+#'
+#' \code{simple} will default to \code{TRUE} if more than one trial is run, otherwise it defaults to \code{FALSE}.
 #'
 #' @examples
 #' data <- synthetic_covariate_data

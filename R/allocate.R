@@ -1,6 +1,6 @@
 #' Randomise a participant
 #'
-#' @description Randomise a participant according to the MSB, CS-MSB or CSSize-MSB algorithms.
+#' @description Randomise a participant.
 #'
 #' @usage allocate( randomisationScheme,
 #'                  randSequence,

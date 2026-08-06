@@ -120,12 +120,12 @@ get_randNumbers <- function(n,
 #'
 #' @description Creates permuted blocks to be used by allocation methods
 #'
-#' @usage get_randNumbers(n, n.trials = 1, trng=NULL, jump_trng=0)
+#' @usage get_permutedBlock(n, blockSize, prop_flexible=0, max_prop_flexible = 1, max_attempts = 1000, n.trials=1, trng = NULL, jump_trng = 0)
 #'
 #' @param n length of random sequence to generate (i.e. maximum number of participants)
 #' @param blockSize a vector containing the allowable block sizes
 #' @param prop_flexible a vector of length \code{length(blockSize)} that contains the proportion of allocations that should be marked as flexible
-#' @param max_prop_flexible the maximum number of allocations that can should be flexible. If the generated number is above this maximum, regenerate the sequence.
+#' @param max_prop_flexible the maximum number of total allocations that should be flexible. If the generated number is above this maximum, regenerate the sequence.
 #' @param max_attempts the maximum number of attempts to regenerate a sequence before returning an error
 #' @param n.trials number of separate sequences to generate
 #' @param trng Control for the random number generator. \code{NULL} for the in-built R engine, an integer to create a \code{yarn3} with this number as the seed, or a *parallel* random number generator provided by the same package. See \link[rTRNG]{TRNG.Engine} for details.

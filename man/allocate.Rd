@@ -9,6 +9,7 @@ allocate( randomisationScheme,
                  arm,
                  data = NULL,
                  newData = NULL,
+                 offset=0,
                  implementation = c("cpp", "R")
                  )
 }
@@ -23,6 +24,8 @@ allocate( randomisationScheme,
 
 \item{newData}{A one-row data frame with the same columns as \code{data} containning relevant data (e.g. covariates) for the new participant to be assigned}
 
+\item{offset}{A positive integer to increase the allocation sequence step by. Used to prevent re-use of the allocation sequence.}
+
 \item{implementation}{A string indicating which implementation of a given method should be used}
 }
 \value{
@@ -33,7 +36,7 @@ A list with class \code{Allocation} containing the following:
 }
 }
 \description{
-Randomise a participant according to the MSB, CS-MSB or CSSize-MSB algorithms.
+Randomise a participant.
 }
 \details{
 implementation should be left to the default (cpp) unless specifically required due to
