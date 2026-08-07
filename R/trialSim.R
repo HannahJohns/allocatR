@@ -38,7 +38,7 @@
 #' If \code{simple} is \code{FALSE}, returns a list of results for the simulated trial. This includes:
 #'
 #' The following participant-level details:
-#' \describe{
+#' \itemize{
 #' \item probabilityLog - the probability of assignment to control for each participant
 #' \item probabilityLog_covariate - the probability of assignment to control for each participant, just based on covariate information
 #' \item probabilityLog_group - the probability of assignment to control for each participant, just based on group allocation information alone
@@ -47,7 +47,7 @@
 #' }
 #'
 #' And the following participant-level details:
-#' \describe{
+#' \itemize{
 #' \item imbalance_std - covariate balance measured using standard tests (test statistic and p-value from the t-test or chi-square test)
 #' \item imbalance_genodds - covariate balance measured using generalised odds ratios (WMW OR and p-value. Categorical variables are one-hot coded for this evaluation)
 #' \item prop_random - proportion of interventions where probability of assignment was 0.5
