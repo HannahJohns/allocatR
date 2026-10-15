@@ -65,11 +65,46 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// CPP_msb_get_decision
+List CPP_msb_get_decision(int nObs, IntegerVector dataType_in, IntegerVector nClasses_in, NumericMatrix data, IntegerVector arm_in, double alpha, double parms);
+RcppExport SEXP _allocatR_CPP_msb_get_decision(SEXP nObsSEXP, SEXP dataType_inSEXP, SEXP nClasses_inSEXP, SEXP dataSEXP, SEXP arm_inSEXP, SEXP alphaSEXP, SEXP parmsSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< int >::type nObs(nObsSEXP);
+    Rcpp::traits::input_parameter< IntegerVector >::type dataType_in(dataType_inSEXP);
+    Rcpp::traits::input_parameter< IntegerVector >::type nClasses_in(nClasses_inSEXP);
+    Rcpp::traits::input_parameter< NumericMatrix >::type data(dataSEXP);
+    Rcpp::traits::input_parameter< IntegerVector >::type arm_in(arm_inSEXP);
+    Rcpp::traits::input_parameter< double >::type alpha(alphaSEXP);
+    Rcpp::traits::input_parameter< double >::type parms(parmsSEXP);
+    rcpp_result_gen = Rcpp::wrap(CPP_msb_get_decision(nObs, dataType_in, nClasses_in, data, arm_in, alpha, parms));
+    return rcpp_result_gen;
+END_RCPP
+}
+// CPP_msb_simulate
+List CPP_msb_simulate(IntegerVector dataType_in, IntegerVector nClasses_in, NumericMatrix data, NumericVector roll_in, double alpha, double parms);
+RcppExport SEXP _allocatR_CPP_msb_simulate(SEXP dataType_inSEXP, SEXP nClasses_inSEXP, SEXP dataSEXP, SEXP roll_inSEXP, SEXP alphaSEXP, SEXP parmsSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< IntegerVector >::type dataType_in(dataType_inSEXP);
+    Rcpp::traits::input_parameter< IntegerVector >::type nClasses_in(nClasses_inSEXP);
+    Rcpp::traits::input_parameter< NumericMatrix >::type data(dataSEXP);
+    Rcpp::traits::input_parameter< NumericVector >::type roll_in(roll_inSEXP);
+    Rcpp::traits::input_parameter< double >::type alpha(alphaSEXP);
+    Rcpp::traits::input_parameter< double >::type parms(parmsSEXP);
+    rcpp_result_gen = Rcpp::wrap(CPP_msb_simulate(dataType_in, nClasses_in, data, roll_in, alpha, parms));
+    return rcpp_result_gen;
+END_RCPP
+}
 
 static const R_CallMethodDef CallEntries[] = {
     {"_allocatR_csmsb_get_decision", (DL_FUNC) &_allocatR_csmsb_get_decision, 12},
     {"_allocatR_csmsb_simulate", (DL_FUNC) &_allocatR_csmsb_simulate, 11},
     {"_allocatR_test_genodds", (DL_FUNC) &_allocatR_test_genodds, 2},
+    {"_allocatR_CPP_msb_get_decision", (DL_FUNC) &_allocatR_CPP_msb_get_decision, 7},
+    {"_allocatR_CPP_msb_simulate", (DL_FUNC) &_allocatR_CPP_msb_simulate, 6},
     {NULL, NULL, 0}
 };
 

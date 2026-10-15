@@ -1,11 +1,9 @@
 #include "biasStrengthControl.hpp"
 using namespace Rcpp;
 
-
 template <typename T> int sgn(T val) {
   return (T(0) < val) - (val < T(0));
 }
-
 
 // There is probably a better way to handle this, but it corrects faults between
 // R and CPP implementations
@@ -134,7 +132,6 @@ void genodds( std::vector<double> &out,
 }
 
 
-
 // Given a bunch of inputs for genodds, make a decision about whether or not to intervene
 // in randomisation
 
@@ -159,16 +156,11 @@ void genodds( std::vector<double> &out,
 // nClasses -- an integer vector giving the number of cases the nominal covariate can take on
 
 
-// We should also offer optional weights but that sounds like future me's problem
-
-
-
-
 // We should also offer controls for the full family of MSB approaches
 
 // Return an object of type Intervention, defined as follows:
 
-struct Intervention{
+struct csmsb_Intervention{
   int biasDirection;
   double imbalanceStrength;
   double biasProbability;
@@ -187,7 +179,7 @@ struct Intervention{
   double BD;
   double seBD;
 
-  Intervention(int nCov){
+  csmsb_Intervention(int nCov){
     vote.resize(nCov,-1);
     testStatistic.resize(nCov,-1);
   }
@@ -195,7 +187,7 @@ struct Intervention{
 };
 
 
-Intervention interventionDecision(
+csmsb_Intervention csmsb_interventionDecision(
                           std::vector<int> &dataType,
                           std::vector<int> &nClasses,
                           std::vector<std::vector<double>> &covariates,
@@ -218,12 +210,9 @@ Intervention interventionDecision(
                           )
 {
 
-
-
-
   int nCovs = dataType.size();
 
-  Intervention out(nCovs);
+  csmsb_Intervention out(nCovs);
 
   for(int cov_i=0; cov_i<nCovs; cov_i++)
   {
@@ -984,7 +973,7 @@ List csmsb_get_decision(int nObs,
   }
 
   // Take all of this nonsense and get a decision
-  Intervention intervention = interventionDecision(dataType,
+  csmsb_Intervention intervention = csmsb_interventionDecision(dataType,
                                                    nClasses,
                                                    covariates,
                                                    arm,
@@ -1126,9 +1115,8 @@ List csmsb_simulate(IntegerVector dataType_in,
   for(int i=0;i<nObs;i++)
   {
 
-
     // Randomise the new patient
-    Intervention intervention = interventionDecision(dataType,
+    csmsb_Intervention intervention = csmsb_interventionDecision(dataType,
                                                      nClasses,
                                                      covariates,
                                                      arm,

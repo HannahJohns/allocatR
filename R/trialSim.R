@@ -414,12 +414,62 @@ trialSim <- function(randomisationScheme,
       }
 
 
+    } else if(method == "msb"){
+
+      result <- msb_trialSim_cpp(data = data,
+                                 settings = settings,
+                                 randSequence = randSequence,
+                                 replay=replay
+      )
+
+      if(simple){
+
+        # Flatten results
+
+        expectedAbsoluteBias <-  result$expected_bias
+        prop_random  <- result$prop_random
+
+        imbalance_std <- result$imbalance_std
+        names(imbalance_std) <- paste("std",names(imbalance_std),sep="_")
+
+        imbalance_genodds <- result$imbalance_genodds
+        names(imbalance_genodds) <- paste("genodds",names(imbalance_genodds),sep="_")
+
+        voteDist <- c(result$vote_dist)
+        names(voteDist) <- c(outer(rownames(result$vote_dist),colnames(result$vote_dist),paste,sep="_"))
+        names(voteDist) <- paste("vote",names(voteDist),sep="_")
+
+        for(i in 1:length(settings)){
+          if(is.null(settings[[i]])) settings[[i]] <- NA
+          if(length(settings[[i]]) > 1) settings[[i]] <- paste(settings[[i]], collapse = ", ")
+        }
+
+
+        sim_results <- cbind(
+          do.call("data.frame",settings),
+          data.frame(
+            n=n,
+            expected_bias=expectedAbsoluteBias,
+            prop_random=prop_random,
+            n0=sum(result$arm=="control"),
+            n1=sum(result$arm=="treatment")
+          )
+        )
+
+        sim_results$allocation_difference = abs(sum(result$arm=="control") - sum(result$arm=="treatment"))
+
+        sim_results <- cbind(sim_results,t(imbalance_std),t(imbalance_genodds),t(voteDist))
+        sim_results <- cbind(method=method,sim_results)
+
+        result <- sim_results
+
+      }
+
     } else {
       stop("Unrecognised method")
     }
 
     return(result)
-
 
   }
 

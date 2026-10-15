@@ -13,3 +13,11 @@ test_genodds <- function(Y, X) {
     .Call(`_allocatR_test_genodds`, Y, X)
 }
 
+CPP_msb_get_decision <- function(nObs, dataType_in, nClasses_in, data, arm_in, alpha, parms) {
+    .Call(`_allocatR_CPP_msb_get_decision`, nObs, dataType_in, nClasses_in, data, arm_in, alpha, parms)
+}
+
+CPP_msb_simulate <- function(dataType_in, nClasses_in, data, roll_in, alpha, parms) {
+    .Call(`_allocatR_CPP_msb_simulate`, dataType_in, nClasses_in, data, roll_in, alpha, parms)
+}
+

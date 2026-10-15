@@ -103,6 +103,32 @@ allocate <- function(  randomisationScheme,
     )
 
 
+  } else if(method == "msb") { 
+  
+    if(is.null(implementation)) implementation <- "cpp"
+
+    if(implementation == "cpp"){
+
+      result <- allocatR::msb_allocate_cpp(data = data,
+                                           arm = arm,
+                                           newData = newData,
+                                           settings = settings,
+                                           randSequence = randSequence,
+                                           offset = offset
+      )
+
+    } else if (implementation == "R"){
+
+      result <- allocatR::msb_allocate_R(data = data,
+                                         arm = arm,
+                                         newData = newData,
+                                         settings = settings,
+                                         randSequence = randSequence,
+                                         offset = offset
+      )
+
+    }
+
   } else {
     stop("unrecognised randomisation scheme")
   }
@@ -110,5 +136,3 @@ allocate <- function(  randomisationScheme,
   result
 
 }
-
-
