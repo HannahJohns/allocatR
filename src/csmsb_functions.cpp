@@ -310,7 +310,7 @@ csmsb_Intervention csmsb_interventionDecision(
         }
         else
         {
-          Rprintf("DATA TYPE DOESN'T EXIST HOW DID YOU EVEN GET HERE?\n");
+          stop("Undefined data type");
         }
 
         if(indicator_x ==1)
@@ -651,7 +651,7 @@ csmsb_Intervention csmsb_interventionDecision(
   }
   else
   {
-    Rprintf("Invalid voting method!\n");
+    stop("Invalid voting method");
   }
 
   // Intervention decision has been made!
@@ -747,7 +747,9 @@ List csmsb_get_decision(int nObs,
 )
 {
 
-  if(data.nrow() <= nObs) Rprintf("PROVIDE THE NEW PATIENT AS WELL YA DINGUS\n");
+  if(data.nrow() <= nObs){
+    stop("C++ expects data to contain both existing and new records\n");
+  }
 
   // Take a dataset and vote on the arm that a new patient should be assigned to
   // Should return the same values as doing this at the R level would return
@@ -764,7 +766,7 @@ List csmsb_get_decision(int nObs,
   int nCov = dataType_in.length();
 
   if(voteMethod!=2){
-    if(threshold_in.size()<nCov) Rprintf("Provide thresholds for all variables!\n");
+    if(threshold_in.size()<nCov) stop("Provide thresholds for all variables!\n");
   }
 
   std::vector<int> dataType(nCov);
@@ -875,7 +877,7 @@ List csmsb_get_decision(int nObs,
           }
           else
           {
-            Rprintf("INVALID DATA TYPE\n");
+            stop("INVALID DATA TYPE\n");
           }
 
           if(indicator_x ==1)
@@ -1213,7 +1215,7 @@ List csmsb_simulate(IntegerVector dataType_in,
           }
           else
           {
-            Rprintf("INVALID DATA TYPE\n");
+            stop("INVALID DATA TYPE\n");
           }
 
 

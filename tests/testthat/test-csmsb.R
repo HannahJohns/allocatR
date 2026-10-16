@@ -24,7 +24,7 @@ test_that("C++ implementation of cs-msb matches R implementation", {
     rownames(df) <- NULL
     randSequence = get_randNumbers(nrow(df), trng = s)
 
-    tmp <- allocatR::trialSim(method = csmsb(alpha=0.5, biasParameters=0.7),
+    tmp <- allocatR::trialSim(csmsb(alpha=0.5, biasParameters=0.7),
                               data=df,replay = T,
                               randSequence = randSequence,
                               nThreads = 1
@@ -61,6 +61,8 @@ test_that("C++ and R implementations agree on when threshold for covariates is r
   rownames(df) <- NULL
 
   arm <- rep(0:1, length.out=nrow(df))
+
+  s <- 1
 
   randSequence = get_randNumbers(nrow(df)+1, trng = s)
 

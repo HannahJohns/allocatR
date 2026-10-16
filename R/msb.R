@@ -353,7 +353,13 @@ msb_allocate_R <- function(data,
       }
 
       t <- (m0-m1) / sqrt(v1/n1 + v0/n0)
-      pVals[j] <- 2*pt(abs(t),n0+n1-2,lower.tail = FALSE)
+
+      df <- ( v0/n0 + v1/n1 )^2 /(
+        (v0/n0)^2/(n0 -1) + 
+        (v1/n1)^2/(n1 -1) 
+      )
+
+      pVals[j] <- 2*pt(abs(t),df,lower.tail = FALSE)
 
       if(!is.na(t)){
 

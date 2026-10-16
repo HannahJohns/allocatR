@@ -15,8 +15,7 @@ struct msb_InterventionDecision{
 
 };
 
-// There is probably a better way to handle this, but it corrects faults between
-// R and CPP implementations
+// Enforce numerical stability
 #define MSB_EPSILON 0.000000001
 
 // We can't repeat the trick we used for csmsb where we store calculations between runs.
@@ -209,7 +208,7 @@ msb_InterventionDecision msb_interventionDecision(
       m0 = m0/n0;
       m1 = m1/n1;
 
-      // Calculate standard deviations
+      // Calculate variance
 
       for(int i=0;i<n0+n1;i++)
       {
@@ -220,18 +219,21 @@ msb_InterventionDecision msb_interventionDecision(
         }
       }
 
-      // Because s0 and s1 are variance multiplied by (n0-1) and (n1-1) respectively,
-      // we can go directly do calculating pooled standard error here
-      double sp = (s0 + s1) / ((double) n0+n1-2);
-      sp = std::sqrt(sp);
+      s0 = s0/(n0-1);
+      s1 = s1/(n1-1);
 
-      // The above shortcut leads to errors if n0 or n1 is less than 2 as we're dividing by zero.
+      // The above leads to errors if n0 or n1 are less than 2 as we're dividing by zero.
       // If this happens, replace pValue with 2 (never intervene)
 
       out.pValue[cov_i] = 2;
       if(n0 > 1 && n1 > 1){
-        double testStat = std::abs(m0-m1)/(sp * std::sqrt( 1/((double) n0) + 1/((double) n1) ));
-        out.pValue[cov_i] = 2*R::pt(testStat,n0+n1-2,false,false);
+        double testStat = std::abs(m0-m1)/(std::sqrt( s0/((double) n0) + s1/((double) n1) ));
+        double df = std::pow( s0/((double) n0) + s1/((double) n1) ,2)/(
+          std::pow(s0/n0,2)/((double)n0 -1) + 
+          std::pow(s1/n1,2)/((double)n1 -1) 
+        );
+
+        out.pValue[cov_i] = 2*R::pt(testStat,df,false,false);
       }
 
       // Calculate vote. Assume that all votes are counted here.
@@ -307,7 +309,9 @@ List CPP_msb_get_decision(int nObs,
 )
 {
 
-  if(data.nrow() <= nObs) Rprintf("PROVIDE THE NEW PATIENT AS WELL YA DINGUS\n");
+  if(data.nrow() <= nObs){
+    stop("C++ expects data to contain both existing and new records\n");
+  }
 
   // Take a dataset and vote on the arm that a new patient should be assigned to
   // Should return the same values as doing this at the R level would return

@@ -3,3 +3,4 @@
 ^.postit*
 ^.Rhistory
 ^.gitignore
+^.*.orig$

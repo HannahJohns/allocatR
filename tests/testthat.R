@@ -1,6 +1,6 @@
 library(testthat)
-library(csmsb)
+library(allocatR)
 
-test_check("csmsb")
+test_check("allocatR")
 
 

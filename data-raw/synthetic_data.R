@@ -15,4 +15,3 @@ synthetic_covariate_data$cov3 <- factor(synthetic_covariate_data$cov3)
 synthetic_covariate_data$cov4 <- factor(synthetic_covariate_data$cov4, levels =c("Low","Medium", "High"), ordered = T)
 
 usethis::use_data(synthetic_covariate_data, overwrite = TRUE)
-

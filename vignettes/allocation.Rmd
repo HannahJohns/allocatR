@@ -17,6 +17,7 @@ knitr::opts_chunk$set(
 
 ```{r setup}
 library(allocatR)
+library(httptest)
 ```
 
 This vignette covers use of the allocatR package to randomly assign participants
@@ -67,6 +68,10 @@ token <- "9A068C425B1341D69E83064A2D273A70"
 
 read_data <- as.data.frame(redcap_read(redcap_uri = uri, token = token)$data)
 
+```
+
+
+```{r}
 # In a trial data set, the arm would be one of the columns read from above
 read_data$arm <- c(0,1,0,1,NA)
 
