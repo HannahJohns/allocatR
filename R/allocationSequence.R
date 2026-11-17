@@ -334,6 +334,16 @@ get_permutedBlock <- function(n,
       }
     }
 
+    # Some methods require an additional column of random numbers to
+    # make an arbitrary decision during randomisation.
+
+    if(is.null(trng)){
+      roll <- runif(nrow(rand_sequence))
+    } else {
+      roll <- rTRNG::runif_trng(nrow(rand_sequence),engine=trng)
+    }
+    rand_sequence <- cbind(rand_sequence,roll)
+
     class(rand_sequence) <- c("Alloc_seq","Permutedblock",class(rand_sequence))
 
     rand_sequence

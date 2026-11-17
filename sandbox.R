@@ -1,10 +1,78 @@
 
+K <- 3
+
+p_constant <- (1/K+0.1)
+
+permutations <- gtools::permutations(K,K)
+
+sapply(1:nrow(permutations),function(i){
+
+  Gk_order <- permutations[i,]
+  prob <- rep(NA,K)
+
+  prob[Gk_order == 1] <- p_constant
+  prob[Gk_order != 1] <- (1-p_constant)/(K-1)
+
+  # prob[Gk_order] <- sapply(1:K,function(k){p_constant - 2*(K*p_constant - 1)/(K*(K+1))*k})
+
+  prob
+}) |> t() |> as.data.frame() -> verteces
+
+unique(verteces)
+
+# 1, 2, 3, flexible
+c(rep((1-p_constant)/(K-1),K),p_constant-(1-p_constant)/(K-1))
+
+
+sapply(1:nrow(permutations),function(i){
+
+  Gk_order <- permutations[i,]
+  prob <- rep(NA,K)
+
+  # prob[Gk_order == 1] <- p_constant
+  # prob[Gk_order != 1] <- (1-p_constant)/(K-1)
+
+  prob[Gk_order] <- sapply(1:K,function(k){p_constant - 2*(K*p_constant - 1)/(K*(K+1))*k})
+
+  prob
+}) |> t() |> as.data.frame() -> verteces
+
+unique(verteces)
 
 
 
 
 
 
+
+
+
+
+
+t(apply(unique(verteces),1,cumsum))
+
+
+library(tidyverse)
+library(prefviz)
+tern22 <- as_ternable(verteces)
+input_df <- get_tern_data2d(tern22)
+
+
+p <- ggplot(input_df, aes(x = x1, y = x2)) +
+  # Draw the ternary space as an equilateral triangle
+  add_ternary_base() + 
+  # Plot the observations as points
+  geom_point() + 
+  # Add vertex labels, taken from the ternable object
+  add_vertex_labels(tern22$simplex_vertices)+
+  geom_ternary_region(
+    x1 = 1/3, x2 = 1/3, x3 = 1/3, # Default reference points. Must sum to 1
+    vertex_labels = tern22$vertex_labels, # Labels for the regions
+    aes(fill = after_stat(vertex_labels)), 
+    alpha = 0.3, color = NA, show.legend = FALSE
+  ) 
+
+p
 
 
 
